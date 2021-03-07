@@ -7,7 +7,7 @@ EnzyDock is a free docking program that is distributed under the GNU General Pub
 	                http://www.themajorgroup.org
                 	majort@biu.ac.il 
 
-This license covers all EnzyDock files.
+This license covers all EnzyDock files. Proper function of EnzyDock relies on the CHARMM simulation package, which is not covered by this license.
 
 Therefore, the EnzyDock program in its entirety may be copied, modified or distributed, according to the terms described below. For user convenience, all parts of EnzyDock are covered by a single license file.
 
