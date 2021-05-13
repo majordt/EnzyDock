@@ -1,0 +1,42 @@
+************************************************************
+*                  Start write_flex.str                    *
+************************************************************
+* A file to set up list of flexible binding site residues
+* Do not make Pro or Gly flexible!
+* 
+
+! First delete all non-flexible atoms so we can renumber
+! Then read protein in again
+set c 1
+label rename_flex_loop
+   rename segid FLX@c sele flex@c end
+   incr c
+if c .le. @proteinunit goto rename_flex_loop
+
+delete atoms sele .not. flex end
+
+set c 1
+label write_flex_loop
+
+   if @numflex@@c .lt. 1 goto skip_write_flex_loop
+
+   join FLX@c renum
+
+   ! Write flexible residues so they can be read in later during docking
+   open write unit 1 form name @pdbDIR/@proteinname_flex@c.pdb
+   write coor pdb unit 1 sele segi FLX@c end
+   close unit 1
+
+   label skip_write_flex_loop
+
+   incr c
+
+if c .le. @proteinunit goto write_flex_loop
+
+delete atoms sele all end
+
+stream @strDIR/read_protein.str
+!stream @strDIR/setup_protein.str
+
+return
+

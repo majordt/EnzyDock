@@ -1,0 +1,37 @@
+************************************************************
+*                  Start usegbsw.str                       *
+************************************************************
+*
+
+! Grid is cleared in enzydock.inp
+!grid off
+
+! Must use infinite cutoff for GBSW (to match gbenergy below)
+set gbctnb  999.0
+set gbctfnb 998.0
+set gbctonb 997.0
+
+nbond atom switch cdie vdw vswitch -
+      cutnb @gbctnb  ctofnb @gbctfnb  ctonnb @gbctonb
+
+! Read all GBSW radii and check if some are missing
+prnlev 0
+stream @strDIR/gbsw/radius_gbsw.str
+prnlev 5
+
+scalar wmain statistics select .not. type H* end
+define check select (.not type H* ) .and. ( property wmain .eq. 0.0 ) show end
+if ?nsel .ne. 0 then       !some heavy atom have a zero radius
+   set missingradius true
+   return
+endif
+
+!scalar charge set 0.0 sele .not. segid ligand_@currligand end
+
+!skipe all excl gbenr
+
+! Note that GBENER is done without any cutoff
+gbsw sw 0.3 sgamma 0.03 dgp 1.5 gbenergy gvdw -
+     epsp @mmeps epsw 80.0 conc 0.1 temp 300.0
+
+

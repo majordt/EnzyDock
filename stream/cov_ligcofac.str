@@ -1,0 +1,30 @@
+************************************************************
+* Call to patch covalent link between ligand and cofactor  *
+************************************************************
+*
+
+bomlev -1
+set d 1
+!set e 0
+label open_ligcofac_patch
+
+   open unit 101 read form name @stpDIR/cofact@d_patch_@currligand.str
+   if ?iostat .ne. -1 then
+      stream @stpDIR/cofact@d_patch_@currligand.str @d
+!      incr e
+   endif
+   incr d
+
+if @d .le. @numcofactor goto open_ligcofac_patch
+bomlev @bomblevel
+
+! Could be for one or more ligands so this part must be modified
+!if @e .eq. 0 then
+!   echo EnzyDock WARNING: COVALENT LINK BETWEEN LIGAND AND COFACTOR REQUESTED, BUT NO PATCH FILE FOUND.
+!   stop
+!else
+!   return
+!endif
+
+return
+

@@ -1,0 +1,6 @@
+github steps:
+git init
+git add .
+git status
+git remote add enzydock_git https://github.com/majordt/EnzyDock.git
+git push enzydock_git master

@@ -1,0 +1,371 @@
+************************************************************
+*                  Start gbsw_cluster.inp                  *
+************************************************************
+* Rescoring the ligand into the protein, with gbsw mm (no grid)
+*
+
+set currligand 1
+
+label gbsw_loop
+
+   ! Read in number of clusters written by clustering program
+   stream nclusters@currligand.str
+
+   goto write_gbsw_dat
+   label after_write_gbsw_dat
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !  Compute solvation free energy for protein alone
+   !  Must be inside loop since protein state can vary
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   stream @strDIR/read_protein.str
+
+   ! Patch catalytic residues (in full protein representation)
+   stream @strDIR/patch_offgrid.str
+
+   ! Read cofactors
+   define cofactors sele none end
+   if @numcofactor .gt. 0 then 
+      stream @strDIR/generate_cofactors.str
+      if patch_cofact .eq. true stream @strDIR/cofact_patch_offgrid.str ! Read cofactor patching
+   endif
+
+   set missingradius false
+
+   stream @strDIR/usegbsw.str
+
+   if missingradius .eq. true goto gbsw_error
+
+   energy
+
+   set pelstat ?gben
+   set pvdw ?asp
+!   calc ptot @pelstat + @pvdw
+   set ptot ?ener
+
+    ! Unit 3 was opened below
+   write title unit 3
+   * @ptot  @pelstat  @pvdw
+
+   ! Release memory used by GBSW
+   gbsw reset
+
+   delete atoms 
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !  End compute solvation free energy for protein alone
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   ! Reads in a new ligand
+   bomlev -1
+   open unit 31 read form name @topDIR/ligand_@currligand.str
+   if ?iostat .ne. -1 then
+      stream unit 31
+   else
+     ! This is a critical warning
+     echo EnzyDock WARNING: Ligand rtf/prm file not found.
+     stop
+   endif
+   bomlev @bomblevel
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !  Compute solvation free energy for ligand alone
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   bomlev -1
+   stream @strDIR/read_ligand.str false
+   bomlev @bomblevel
+
+   set missingradius false
+
+   stream @strDIR/usegbsw.str
+
+   if missingradius .eq. true goto gbsw_error
+
+   energy
+
+   set lelstat ?gben
+   set lvdw ?asp
+!   calc ltot @lelstat + @lvdw
+   set ltot ?ener
+
+   ! Unit 4 was opened below
+   write title unit 4
+   * @ltot  @lelstat  @lvdw
+
+   ! Release memory used by GBSW
+   gbsw reset
+
+   delete atoms
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !  End compute solvation free energy for ligand alone
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   ! Read minimum ligand structure
+   bomlev -1
+   open unit 1 form read name @psfDIR/all_mm_mindock_@currligand.psf
+   read psf card unit 1 !append
+   close unit 1
+   bomlev @bomblevel
+
+   ! Must read structure here so that we can define groups
+   set iter 1
+
+   open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+   read coor card unit 1 !offset @NumObject
+   close unit 1
+
+   define QMS sele segid ligand_@currligand show end
+
+   if @flexibledocking .eq. true then
+      define flex sele none end
+      set b 1
+      label define_gbswflex_loop1
+         if @numflex@@b .lt. 1 goto skip_define_gbswflex_loop1
+         set c 1
+         label define_gbswflex_loop2
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+            incr c
+         if c .le. @numflex@@b goto define_gbswflex_loop2
+         label skip_define_gbswflex_loop1
+         incr b
+      if b .le. @proteinunit goto define_gbswflex_loop1
+
+      if @flexibledocking .eq. true then
+         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) show end
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+         define flexx sele flex .and. .not. back show end
+         ! Backbone atoms are not flexible unless specifically defined as flexible
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+      endif
+
+      ! If backbone atoms are flexible
+      if flexibleback .eq. true then
+         open unit 31 read form name @strDIR/back_flex.str
+         stream unit 31
+         !stream @strDIR/back_flex.str
+         define back sele back .and. .not. fback end
+      endif
+
+      ! Define flexible region
+      define flexx sele flex .and. .not. back show end
+
+   endif
+   define ligand sele segid ligand_@currligand show end
+   set c 1
+   define cofactors sele none end
+   label read_qcofactors
+      define cofactors sele cofactors .or. segi COF@c show end
+      incr c
+   if c .le. @numcofactor goto read_qcofactors
+
+   !cons harm clear 
+   if @flexibledocking .eq. true then
+      cons fix sele .not. (QMS .or. cofactors .or. flexx) end
+   else
+      cons fix sele .not. (QMS .or. cofactors) end
+   endif
+ 
+   open write unit 1 form name @psfDIR/all_gbsw_min_@currligand_@runid.psf
+   write psf card unit 1
+   close unit 1
+
+   label gbsw_cluster_loop
+
+     open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+     read coor card unit 1 !offset @NumObject
+     close unit 1
+
+     ! Release fix as fix influences the nbonded list (fix info is stored in psf file after mass column)
+     cons fix sele none end
+
+     stream @strDIR/usegbsw.str
+
+     if missingradius .eq. true goto gbsw_error
+     set missingradius false
+
+     if @minradius .gt. 0.0 then
+        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
+        cons fix sele .not. flexradius end
+        mini abnr nstep 100
+     endif
+     ! Check how this influences nbonded list
+     cons fix sele .not. ligand end
+     mini abnr nstep 100
+     cons fix sele none end
+     energy
+
+     calc gbswelstat ?gben - @pelstat - @lelstat
+     calc gbswvdw ?asp - @pvdw - @lvdw
+!     calc gbswtot @gbswelstat + @gbswvdw
+     calc gbswtot ?ener - @ptot - @ltot
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_gbsw_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1 sele QMS show end
+     *  gbswtot: Total GBSW energy (including all terms)
+     *  gbswelstat:  GBSW electrostatic energy
+     *  gbswvdw: GBSW vdW energy
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  gbswtot   gbswelstat  gbswvdw             clustiter
+     * ======================================================
+     *  @gbswtot  @gbswelstat @gbswvdw  kcal/mol  clust@iter
+     *
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_gbsw_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1 sele QMS show end
+     *  gbswtot: Total GBSW energy (including all terms)
+     *  gbswelstat:  GBSW electrostatic energy
+     *  gbswvdw: GBSW vdW energy
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  gbswtot   gbswelstat  gbswvdw             clustiter
+     * ======================================================
+     *  @gbswtot  @gbswelstat @gbswvdw  kcal/mol  clust@iter
+     *
+     close unit 1
+
+     ! Unit 2 was opened below
+     write title unit 2
+     * @gbswtot  @gbswelstat  @gbswvdw  clust@iter
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_gbsw_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/all_gbsw_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1
+     close unit 1
+
+     if @flexibledocking .eq. true then
+
+        if @numcofactor .gt. 0 then
+           open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_gbsw_min_clust@iter_@currligand_@runid.crd
+           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+
+           open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_gbsw_min_clust@iter_@currligand_@runid.pdb
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+           close unit 1
+        endif
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_gbsw_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele QMS .or. flex show end
+        *  gbswtot: Total GBSW energy (gbswelstat + gbswvdw)
+        *  gbswelstat:  GBSW electrostatic energy
+        *  gbswvdw: GBSW vdW energy
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  gbswtot   gbswelstat  gbswvdw             clustiter
+        * ======================================================
+        *  @gbswtot  @gbswelstat @gbswvdw  kcal/mol  clust@iter
+        *
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_gbsw_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele QMS .or. flex show end
+        *  gbswtot: Total GBSW energy (gbswelstat + gbswvdw)
+        *  gbswelstat:  GBSW electrostatic energy
+        *  gbswvdw: GBSW vdW energy
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  gbswtot   gbswelstat  gbswvdw             clustiter
+        * ======================================================
+        *  @gbswtot  @gbswelstat @gbswvdw  kcal/mol  clust@iter
+        *
+        close unit 1
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_gbsw_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele flex show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_gbsw_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele flex show end
+        close unit 1
+
+     endif
+
+     if @numcofactor .gt. 0 then
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_gbsw_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele ligand .or. cofactors show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_gbsw_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele ligand .or. cofactors show end
+        close unit 1
+     endif
+
+     !print coor
+
+     incr iter
+
+     ! Release memory used by GBSW
+     gbsw reset
+
+   if @iter .le. @ncluster goto gbsw_cluster_loop
+
+   incr currligand
+
+   dele atoms sele all end
+
+if currligand .le. @lastinter goto gbsw_loop
+
+skip none
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_gbsw_dat
+
+    ! Starts writing the output summary file: Complex
+    open write unit 2 form name @resDIR/@currligand_c_summary_gbsw_@runid.dat
+    write title unit 2
+**
+*  Summary for ligand number @currligand
+*  etot (complex): Total GBSW energy (includes all terms)
+*  elstat (complex): GBSW electrostatic energy
+*  vdw (complex): GBSW vdW energy
+*  clustiter: cluster number
+*  currligand: @currligand
+*  etot        elstat        vdw        clustmiter
+* =================================================
+*
+
+    ! Starts writing the output summary file: Protein
+    open write unit 3 form name @resDIR/@currligand_p_summary_gbsw_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  etot (protein): Total GBSW energy (includes all terms)
+*  elstat (protein): GBSW electrostatic energy
+*  vdw (protein): GBSW vdW energy
+*  currligand: @currligand
+*  etot        elstat        vdw
+* ======================================
+*
+
+    ! Starts writing the output summary file: Ligand
+    open write unit 4 form name @resDIR/@currligand_l_summary_gbsw_@runid.dat
+    write title unit 4
+**
+*  Summary for ligand number @currligand
+*  etot (ligand): Total GBSW energy (includes all terms)
+*  elstat (ligand): GBSW electrostatic energy
+*  vdw (ligand): GBSW vdW energy
+*  currligand: @currligand
+*  etot        elstat        vdw
+* ======================================
+*
+
+goto after_write_gbsw_dat
+
+label gbsw_error
+   echo EnzyDock WARNING: Missing parameters for GBSW... skipping
+   echo Check file @strDIR/gbsw/radius_gbsw.str
+return
+
+

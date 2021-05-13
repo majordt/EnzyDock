@@ -1,0 +1,122 @@
+************************************************************
+*                Start top_prm_all.str                     *
+************************************************************
+* Reads in rtf and prm files
+*
+
+! Read protein topology file
+open read unit 10 card name @ProtTopFile36
+read rtf unit 10 card 
+close unit 10
+
+!Read protein parameter file
+open read unit 10 card name @ProtParFile36
+read para unit 10 card flex
+close unit 10
+
+bomlev  -2
+
+!Read grid topology and parameter files
+if @usegrid .eq. true then
+
+    open unit 10 read card name @gridrtf
+    read rtf card unit 10 append
+    close unit 10 
+
+    open unit 10 read card name @gridprm
+    read para unit 10 flex append
+    close unit 10
+
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+stream @topDIR/toppar_water_ions.str
+
+!read topology
+open read card unit 10 name @topDIR/top_all36_cgenff.rtf
+read rtf card unit 10 append
+close unit 10
+
+!read parameters
+open read card unit 10 name @topDIR/par_all36_cgenff.prm
+read param card unit 10 flex append
+close unit 10
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Read cofactor rtf
+! cofact1
+set d 1
+
+label read_cofac_rtf_prm
+
+if d .gt. @numcofactor goto skip_read_cofac_rtf_prm
+
+    bomlev -1
+! Read rtf/prm files either as single str file or as separate rtf/prm
+    open unit 101 read form name @topDIR/@cofactname@@d.str
+    if ?iostat .ne. -1 then
+       stream @topDIR/@cofactname@@d.str
+    else
+       open unit 101 read form name @topDIR/@cofactname@@d.rtf
+       if ?iostat .ne. -1 then
+          open read unit 10 card name @topDIR/@cofactname@@d.rtf
+          read rtf unit 10 card append
+          close unit 10
+       else
+          echo EnzyDock WARNING: Check that cofactor RTF file exists
+!          stop
+       endif
+       open unit 101 read form name @topDIR/@cofactname@@d.prm
+       ! Reads cofactor par file
+       if ?iostat .ne. -1 then
+          open read unit 10 card name @topDIR/@cofactname@@d.prm
+          read para unit 10 card flex append
+          close unit 10
+       else
+          echo EnzyDock WARNING: Check that cofactor PRM file exists
+!          stop
+       endif
+    endif
+! Read patch files as single str file
+    ! Protein-cofactor patch
+    open unit 101 read form name @topDIR/@cofactname@@d_patch.str
+    if ?iostat .ne. -1 then
+       stream @topDIR/@cofactname@@d_patch.str
+    endif
+    ! Ligand-cofactor patch
+    set currligand 1
+    label lig_cofac_loop
+       open unit 101 read form name @topDIR/ligand_@currligand_@cofact@@d_patch.str
+       if ?iostat .ne. -1 then
+          stream @topDIR/ligand_@currligand_@cofact@@d_patch.str
+       endif
+       incr currligand
+    if @currligand .le. @numligands goto lig_cofac_loop
+    set currligand 1
+
+    bomlev @bomblevel
+
+    incr d
+
+goto read_cofac_rtf_prm
+
+label skip_read_cofac_rtf_prm
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+if covalent .eq. true then
+   stream @topDIR/covalent.str
+endif
+
+! "_" is dummy variable
+define _ sele .not. init show end
+
+bomlev @bomblevel
+
+!**********************************************************
+!                  End top_prm_all.str
+!**********************************************************
+
+return
+

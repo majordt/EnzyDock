@@ -1,0 +1,58 @@
+************************************************************
+*                  Start generate_protein.str              *
+************************************************************
+*
+bomlev -2
+
+set a 1
+
+!set offset -@offset
+!set offset0 @offset
+set offset -@offset@@a
+
+label segment_loop
+
+   ! The PDB that is read in must have HIS replaced with HSD, HSE, or HSP and
+   ! ILE's CD1 atom needs to be replaced with CD. 
+   ! CHARMM will pick first/last patches automatically
+   open read card unit 1 name @pdbDIR/@proteinname@@a.pdb
+   read sequ pdb unit 1
+   generate pep@a setup warn !first NTER last CTER
+   rewind unit 1
+   read coor pdb unit 1 offset @offset
+   close unit 1
+
+   print coor sele all end
+
+   ! ATTEMPT TO PLACE ANY MISSING HEAVY ATOMS
+   ic purge
+   ic param
+   ic fill preserve
+   ic build
+   define test sele ( .not. type H* ) .and. ( .not. init ) show end
+
+   ! REBUILD ALL H ATOM COORDS
+   coor init sele type H* end
+   hbuild sele type H* end
+   define test sele .not. init show end
+
+   autogen angle dihedral
+
+   set NumObject ?nres
+
+   incr a
+
+   if a .le. @proteinunit then 
+      calc offset -@offset@@a + @NumObject
+   endif
+
+if a .le. @proteinunit goto segment_loop
+
+bomlev @bomblevel
+
+!**********************************************************
+!*                 End generate_protein.str
+!**********************************************************
+
+return
+

@@ -1,0 +1,8 @@
+* Define consensus atoms
+* Replace 'none' with appropriate selection
+*
+
+define consatoms sele none show end
+
+return
+

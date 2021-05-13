@@ -1,0 +1,28 @@
+************************************************************
+* Read in water molecules                                  *
+* Note that these waters have an angle, but not H-H bond   *
+* so no shaking of these waters                            *
+* Note that for now waters are not included in MC and are  *
+* fixed during SAMD                                        *
+************************************************************
+*
+
+set NumObject ?nres
+
+bomlev -1
+open unit 1 form read name @pdbDIR/@proteinname_wat.pdb
+bomlev @bomblevel
+if ?iostat .ne. -1 then
+   read sequ pdb unit 1
+   generate CWAT setup angle nodihedral
+   rewind unit 1
+   read coor pdb unit 1 offset @NumObject
+   close unit 1     
+   set water true
+else
+   echo "EnzyDock warning: Water requested but no pdb file found..."
+endif
+
+hbuild
+
+return

@@ -1,0 +1,60 @@
+************************************************************
+*                  Start consensus_docking.str             *
+************************************************************
+* A file to set up the consensus docking for the docking 
+* program 
+*
+
+! This variable is not in use. Can be used if consensus docking uses
+! previous structure (and not first structure) as reference for 
+! consensus restraints.
+calc lastligand @currligand - 1
+
+! This command can cause 'Bad atom set value:coding error' error here
+!print cons
+cons harm clear
+
+! Not sure why we have this condition here
+if @currligand .le. @numligands goto read_cons
+goto skip_cons
+
+label read_cons
+bomlev -1
+
+! DTM: Should maybe read coordinates into COMP array? Otherwise it writes
+! over what was just read before
+open read unit 1 form name @resDIR/lig_mindock_1.crd
+read coor card unit 1 comp
+
+print coor
+print coor comp
+
+bomlev -1
+open unit 101 read form name @stdDIR/consensus_def.str
+if ?iostat .ne. -1 then
+   stream @stdDIR/consensus_def.str
+else
+   echo EnzyDock WARNING: consensus_def.str file missing!
+   echo EnzyDock WARNING: See documentation
+   stop
+endif
+bomlev @bomblevel
+
+! 'notrans' and 'norot' must be used unless entire ligand is used for fitting
+cons harm bestfit mass force @harmforce comp -
+    notrans norot sele consatoms end
+
+! These prints are useful for debugging
+!print cons
+!print coor
+!print coor comp
+
+label skip_cons
+bomlev @bomblevel
+
+!**********************************************************
+!*                   End consensus_docking.str            *
+!**********************************************************
+
+return
+

@@ -1,0 +1,26 @@
+***********************************************************
+*                  Start userrestraints.str               *
+***********************************************************
+!
+! Auto generated NOE or PNOE restrictions file that contains noe 
+! restriction information
+! created on Thu Jul 12 16:18:24 IDT 2018
+!
+! Information on how noe restraints should be made 
+! are located in the cons.doc documentation, 
+! an example is also below
+!
+! EXAMPLE:
+! assign select atom COEN 1 N7N end select atom PEPA 7 O end -
+!     kmin 50.0 rmin 2.6 kmax 100.0 rmax 3.00 fmax 100.0
+!
+
+! Restraints here
+if @numcofactor .gt. 0 then
+   cons harm force @kcf sele cofactors .and. .not. hydrogen show end
+endif
+
+!**********************************************************
+!                  End userrestraints.str                 *
+!**********************************************************
+

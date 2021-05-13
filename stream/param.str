@@ -1,0 +1,63 @@
+************************************************************
+*                          param.str                       *
+************************************************************
+* This script streams in all important global variables
+* needed for EnzyDock.
+* For variables often changed by user, see userparam.str 
+* Project name 'proj' must be set and should equal folder name.
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! General parameters
+
+set proj         xxxx                               ! Project name, must be lowercase
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Directories
+! Use softlink to allow mixed case names
+! Use softlink to avoid problem of filenames becoming too long for CHARMM (128 char)
+set DIR0         "~/charmm/workspace/dock/xxxx"      ! If mixed case path name, must be in quotation marks
+set softlink true
+stream ../stream/softlink.str 1
+set topDIR       @DIR/local_top                      ! Local parameter directory
+set potDIR       @DIR/local_pot                      ! Local potentials directory
+set strDIR       @DIR/stream                         ! Local stream directory
+set stpDIR       @strDIR/patching                    ! Local directory containing all patching calls
+set stdDIR       @strDIR/consdef                     ! Local directory containing specific constraints definitions
+set stmDIR       @strDIR/mc                          ! Local directory containing MC moves to add/delete
+set PSFDIR       @DIR/psf                            ! Local psf directory
+set pdbDIR       @DIR/pdb                            ! Local pdb directory
+set crdDIR       @DIR/crd                            ! Local crd directory
+set resDIR       @DIR/results                        ! Results directory
+set scrDIR       @DIR/scr                            ! Scratch disk for current project
+set scr1DIR      /var/spool/scratch/majort/enzydock/scr ! Multiple project scratch
+set docDIR       @DIR/dock                           ! The dock directory that holds all files
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! RTF and PRM files
+set ProtTopFile36   @topDIR/top_all36_prot.rtf                ! Protein topology, C36 FF (August 2012)
+set ProtParFile36   @topDIR/par_all36_prot.prm                ! Protein parameters, C36 FF (August 2012)
+set WatIonTopFile   @topDIR/top_all36_water_ions_dd.rtf       ! Water and ion topology
+set WatIonParFile   @topDIR/par_all36_water_ions_dd.prm       ! Water and ion parameters
+set BDGTopFile   @topDIR/top_all36_carb.rtf       ! beta D glucose topology
+set BDGParFile   @topDIR/par_all36_carb.prm                ! beta D glucose parameters
+set FlavinTopFile   @topDIR/qmmm.rtf                          ! Flavin topology
+set FlavinParFile   @topDIR/qmmm.prm                          ! Flavin parameters
+!set Tip3File        @crdDIR/tip216.crd                       ! Equilibrated TIP3 file
+set gridrtf         @topDIR/grid_probes.rtf                   ! rtf for grid generation on receptor
+set gridprm         @topDIR/grid_probes.prm                   ! prm for grid generation on receptor
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  Initialization
+
+! Initialize random number engine
+stream @strDIR/rseed.str
+
+! Initialize all run parameters
+stream @strDIR/userparam.str
+
+! Check and initialize undefined parameters and check consistencies
+stream @strDIR/param_set_check.str
+
+return
+

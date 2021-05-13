@@ -1,0 +1,52 @@
+* Test probes for grid potential set-up
+*
+ATOMS
+MASS  -1  K1    1.00   ! K1 !
+MASS  -1  K2    1.00   ! K2 !
+MASS  -1  K3    1.00   ! K3 !
+MASS  -1  K4    1.00   ! K4 !
+MASS  -1  K5    1.00   ! K5 !
+MASS  -1  K6    1.00   ! K6 !
+MASS  -1  K7    1.00   ! K7 !
+MASS  -1  K8    1.00   ! K8 !
+MASS  -1  K9    1.00   ! K9 !
+MASS  -1  K10   1.00   ! K10 !
+MASS  -1  K11   1.00   ! K11 !
+MASS  -1  K12   1.00   ! K12 !
+MASS  -1  K13   1.00   ! K13 !
+MASS  -1  K14   1.00   ! K14 !
+MASS  -1  K15   1.00   ! K15 !
+MASS  -1  K16   1.00   ! K16 !
+MASS  -1  K17   1.00   ! K17 !
+MASS  -1  K18   1.00   ! K18 !
+MASS  -1  K19   1.00   ! K19 !
+MASS  -1  K20   1.00   ! K20 !
+
+NBONDED  NBXMOD 5  ATOM RDIEL SWITCH VATOM VDISTANCE VSWITCH -
+CUTNB 999.0 CTOFNB 998.0 CTONNB 997.0 EPS 3 E14FAC 0.5 WMIN 1.5
+!
+!                 EMIN         Rmin     These columns used for
+!              (kcal/mol)      (A)      1-4 interactions
+!
+K1       0.00     -1.0000       0.2245
+K2       0.00     -1.0000       0.64 
+K3       0.00     -1.0000       0.82 
+K4       0.00     -1.0000       1.07 
+K5       0.00     -1.0000       1.20 
+K6       0.00     -1.0000       1.34 
+K7       0.00     -1.0000       1.4  
+K8       0.00     -1.0000       1.45 
+K9       0.00     -1.0000       1.54 
+K10      0.00     -1.0000       1.62 
+K11      0.00     -1.0000       1.73 
+K12      0.00     -1.0000       1.8  
+K13      0.00     -1.0000       1.9  
+K14      0.00     -1.0000       2.02 
+K15      0.00     -1.0000       2.1  
+K16      0.00     -1.0000       2.18 
+K17      0.00     -1.0000       2.3  
+K18      0.00     -1.0000       2.5  
+K19      0.00     -1.0000       2.6  
+K20      0.00     -1.0000       2.909  
+
+END

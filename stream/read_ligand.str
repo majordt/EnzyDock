@@ -1,0 +1,43 @@
+************************************************************
+*                      Start read_ligand.str               *
+************************************************************
+* Read ligand pdb
+* 
+
+open unit 1 read form name @pdbDIR/ligand_@currligand.pdb
+read sequ pdb unit 1
+close unit 1
+generate ligand_@currligand first none last none
+    
+open read unit 1 form name @pdbDIR/ligand_@currligand.pdb
+read coor pdb unit 1
+close unit 1
+
+hbuild sele type H* .and. segi ligand_@currligand end  
+
+! If using MC run automatic torsional Python generator code
+! Only enter this section if called from ligand_simulate.inp 
+set 0 ../pdb/ligand_@currligand.pdb
+if @covalent .eq. true then
+   set 1 @liglink1
+endif
+if @in1 .eq. true then
+   if @mcflag .eq. true then
+      if @mctorsgen .eq. true then
+         ! If covalent, then all torsions must be directionally
+         ! outwards from link-point
+         if @covalent .eq. true then
+             system "../scripts/smiles_tors.py @0 @1"
+         else
+             system "../scripts/smiles_tors.py @0"
+         endif
+      endif
+   endif
+endif
+
+!***********************************************************
+!*                      End read_ligand.str
+!***********************************************************
+
+return
+

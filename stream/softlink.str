@@ -1,0 +1,24 @@
+************************************************************
+* Invoke softlink to directories to                        *
+* 1) Avoid too long file name                              *
+* 2) Allow mixed case directory paths (not including       *
+*    project name which must be lowercase)                 *
+* Argument: Create (1) or remove (0) link                  *
+************************************************************
+*
+
+! Use softlink to allow mixed case names
+! Use softlink to avoid problem of filenames becoming too long for CHARMM (128 char)
+
+! For mixed case file/directory names
+if softlink .eq. true then
+   set 0            @DIR0                            ! Results directory
+   set 1            @proj                            ! Create soft link here
+   set 2            @in1
+   system "../scripts/softlink.py @0 @1 @2"
+   set DIR @1
+else ! This won't work if using mixed case filenames
+   set DIR @DIR0/@proj
+endif
+
+return

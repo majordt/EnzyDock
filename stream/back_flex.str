@@ -1,0 +1,111 @@
+************************************************************
+*                  Start back_flex.str                     *
+************************************************************
+* Define flexible backbone atoms
+*
+
+define fback sele none end
+
+set b 1
+
+label bfunit_loop
+
+   set c 1
+
+   if @numflex@@b .lt. 1 goto skip_bflex_loop
+
+   label bflex_loop
+
+     set nflag false
+     set cflag false
+     ! Check if residue is border-residue (if yes, terminal backbone atom must be fixed)
+     calc nside @flex@@b@@c - 1   ! Get residue ID of residue on N-terminal side
+     goto check_nside
+     label after_check_nside
+     calc cside @flex@@b@@c + 1   ! Get residue ID of residue on C-terminal side
+     goto check_cside
+     label after_check_cside
+
+     if @nflag .eq. false then
+      if @cflag .eq. false then
+        define bflex sele type O .or. type CA .or. type HN .or. type HA end   ! Bare backbone without terminal atoms
+        if @{kbf_flag} .eq. false then
+           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
+        endif
+      endif
+     endif
+     ! Part of longer sequence in both directions
+     if @nflag .eq. true then
+      if @cflag .eq. true then   
+        define bflex sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end   ! Full back bone
+      endif
+     endif
+     ! Part of longer sequence in N-term directions
+     if @nflag .eq. true then
+      if @cflag .eq. false then   
+        define bflex sele type N .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + N
+        if @{kbf_flag} .eq. false then
+           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
+        endif
+      endif
+     endif
+     ! Part of longer sequence in C-term directions
+     if @nflag .eq. false then
+      if @cflag .eq. true then   
+        define bflex sele type C .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + C
+        if @{kbf_flag} .eq. false then
+           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
+        endif
+      endif
+     endif
+
+     define fback sele fback .or. (bflex .and. (segi FLX@b .and. resi @c)) show end
+
+     incr c
+
+   if c .le. @numflex@@b goto bflex_loop
+
+   label skip_bflex_loop
+
+   incr b
+
+if b .le. @proteinunit goto bfunit_loop
+
+set kbf_flag true
+
+print cons
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Check if neighboring residue on N-terminal side is defined as flexible
+label check_nside
+   set s 1
+   label sloop
+      set t 1
+      if @numflex@@s .lt. 1 goto skip_tloop
+      label tloop
+         if @nside .eq. @flex@@s@@t set nflag true
+         incr t
+      if t .le. @numflex@@s goto tloop
+      label skip_tloop
+      incr s
+   if s .le. @proteinunit goto sloop
+goto after_check_nside
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Check if neighboring residue on C-terminal side is defined as flexible
+label check_cside
+   set u 1
+   label uloop
+      set v 1
+      if @numflex@@u .lt. 1 goto skip_vloop
+      label vloop
+         if @cside .eq. @flex@@u@@v set cflag true
+         incr v
+      if v .le. @numflex@@u goto vloop
+      label skip_vloop
+      incr u
+   if u .le. @proteinunit goto uloop
+goto after_check_cside
+

@@ -1,0 +1,289 @@
+************************************************************
+* Move ligand to position so that the ligand's anchoring atom is
+* superimposed on the hydrogen attached to the protein's anchoring atom
+* Assumption here is that liglink1 is connected to liglink2:
+* liglink1-liglink2 ---> liglink1-protlink1
+* C-H ---> C-X (X = S, O)
+* Built in assumption is that covalent protein residue is first in flexible list (FLX@{covseg})
+* where covseg is the protein monomer hosting the covalent residue
+************************************************************
+*
+
+! Strategy: 
+! Orient protein link hydrogen (X-H) towards active site center as defined by 
+! bsitex, bsitey, and bsitez. Then orient ligand C-H attachment point towards this
+! X-H bond in a manner that keeps stereochemistry. Then fine-tune C-X bond distance.
+
+! Orient protein link hydrogen (X-H) towards active site center
+coor stat sele atom FLX@{covseg} 1 @protlink0 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+set x3 ?xave
+set y3 ?yave
+set z3 ?zave
+
+! Components of the C-X bond vector
+calc dx1 = @x1 - @x2
+calc dy1 = @y1 - @y2
+calc dz1 = @z1 - @z2
+
+! Components of the X-H bond vector
+calc dx2 = @x3 - @x2
+calc dy2 = @y3 - @y2
+calc dz2 = @z3 - @z2
+
+! Find the A, B, C, D coefficients of the equation of the plane (A*x + B*y + C*z + D = 0) determined by C, X, H
+! A, B, C are the components of the normal to the plane determined by C, X, H (the cross product C-X.x.X-H)
+! D is extracted from the plane equation, i.e. D = - A*x - B*y - C*z
+calc xvec1 = @dy2 * @dz1 - @dz2 * @dy1
+calc yvec1 = @dz2 * @dx1 - @dx2 * @dz1
+calc zvec1 = @dx2 * @dy1 - @dy2 * @dx1
+
+! Use active site center to define vector from protein link residue
+set x3 @bsitex
+set y3 @bsitey
+set z3 @bsitez
+
+! Components of the C-X bond vector
+calc dx1 = @x1 - @x2
+calc dy1 = @y1 - @y2
+calc dz1 = @z1 - @z2
+
+! Components of the X-active site center bond vector
+calc dx2 = @x3 - @x2
+calc dy2 = @y3 - @y2
+calc dz2 = @z3 - @z2
+
+! Find the A, B, C, D coefficients of the equation of the plane (A*x + B*y + C*z + D = 0) determined by C, X, H
+! A, B, C are the components of the normal to the plane determined by C, X, active site center (the cross product C-X.x.X-asc)
+! D is extracted from the plane equation, i.e. D = - A*x - B*y - C*z
+calc xvec2 = @dy2 * @dz1 - @dz2 * @dy1
+calc yvec2 = @dz2 * @dx1 - @dx2 * @dz1
+calc zvec2 = @dx2 * @dy1 - @dy2 * @dx1
+
+calc numer = @xvec1 * @xvec2 + @yvec1 * @yvec2 + @zvec1 * @zvec2
+calc tmp1 = @xvec1 * @xvec1 + @yvec1 * @yvec1 + @zvec1 * @zvec1
+calc tmp2 = @xvec2 * @xvec2 + @yvec2 * @yvec2 + @zvec2 * @zvec2
+calc denom = sqrt(@tmp1) * sqrt(@tmp2)
+
+calc phi = acos(@numer / @denom)
+calc phi = @phi * 180.0 / ?pi
+
+! Print pdb file for test cases
+open unit 1 write form name @pdbDIR/tmp0.pdb
+write coor pdb unit 1
+close unit 1
+
+coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+coor axis sele atom FLX@{covseg} 1 @protlink0 show end sele atom FLX@{covseg} 1 @protlink1 show end
+coor rotate axis phi @phi sele atom FLX@{covseg} 1 @protlink2 show end 
+coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+
+! Print pdb file for test cases
+open unit 1 write form name @pdbDIR/tmp1.pdb
+write coor pdb unit 1
+close unit 1
+
+! Orient ligand C-H attachment point towards C-X bond
+
+! Now translate ligand so that covalent C-link superposes with protein X atom
+coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom ligand_@currligand 1 @liglink1 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+calc dx @x1 - @x2
+calc dy @y1 - @y2
+calc dz @z1 - @z2
+
+coor trans xdir @dx ydir @dy zdir @dz sele segi ligand_@currligand end
+coor stat sele atom ligand_@currligand 1 @liglink1 show end
+
+! Now orient ligand so that X-C bond aligns with X-H bond
+coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+calc dx1 @x2 - @x1
+calc dy1 @y2 - @y1
+calc dz1 @z2 - @z1
+
+coor stat sele atom ligand_@currligand 1 @liglink1 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom ligand_@currligand 1 @liglink2 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+! Check direction here (will stereochemistry be correct?)
+calc dx2 @x1 - @x2 !- @x1
+calc dy2 @y1 - @y2 !- @y1
+calc dz2 @z1 - @z2 !- @z1
+
+! Calculate cross product
+! A×B = (dy1*dz2 - dz1*dy2, dz1*dx2 - dx1*dz2, dx1*dy2 - dy1*dx2)
+calc xvec = @dy1 * @dz2 - @dz1 * @dy2
+calc yvec = @dz1 * @dx2 - @dx1 * @dz2
+calc zvec = @dx1 * @dy2 - @dy1 * @dx2
+! Calculate angle between two vectors (X-H and C-H)
+! Then compute cross product to get orthogonal direction to use as
+! rotational axis
+calc numer = @dx1 * @dx2 + @dy1 * @dy2 + @dz1 * @dz2
+calc tmp1 = @dx1 * @dx1 + @dy1 * @dy1 + @dz1 * @dz1
+calc tmp2 = @dx2 * @dx2 + @dy2 * @dy2 + @dz2 * @dz2
+calc denom = sqrt(@tmp1) * sqrt(@tmp2)
+calc phi = acos(@numer / @denom) * 180.0 / ?pi
+
+! Print pdb file for test cases
+open unit 1 write form name @pdbDIR/tmp2.pdb
+write coor pdb unit 1
+close unit 1
+
+! The rtf/prm should only be read once during job
+if @readummy .eq. false goto skipdummy
+
+! To get rotational axis, define two dummy atoms to use 'coor axis sele' 
+read rtf card append
+* RTF for dummy atom
+*
+ 27 1
+
+MASS -1 D 1.0 E ! (Dummy atom)
+
+RESI DUMY 0.0
+GROUP
+ATOM D1 D 0.0
+
+END
+
+read param card flex append
+* Parameters for dummy atom
+*
+
+BOND
+
+ANGLE
+
+DIHEDRAL
+
+NONBONDED
+!
+D 0.0 0.8 2.0
+
+END
+
+set readummy false
+
+label skipdummy
+
+bomlev -2
+
+read sequ card
+* Read 2 dummy atoms
+*
+ 2
+DUMY DUMY
+
+generate dummies setup first none last none
+print coor sele all end
+
+bomlev @bomblevel
+
+! Define two points along axis that is normal to X-H and C-X vectors
+set dux1 @xvec
+set duy1 @yvec
+set duz1 @zvec
+calc dux2 10.0 * @xvec
+calc duy2 10.0 * @yvec
+calc duz2 10.0 * @zvec
+
+coor set xdir @dux1 ydir @duy1 zdir @duz1 sele resn DUMY .and. resi 1 show end
+coor set xdir @dux2 ydir @duy2 zdir @duz2 sele resn DUMY .and. resi 2 show end
+
+!print coor sele all end
+
+coor axis sele resn DUMY .and. resi 1 show end sele resn DUMY .and. resi 2 show end
+
+dele atom sele resn DUMY end
+
+coor rotate axis phi @phi sele segid ligand_@currligand end
+
+! Now translate ligand so that covalent C-link superposes with protein H-X atom
+coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom ligand_@currligand 1 @liglink1 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+calc dx @x1 - @x2
+calc dy @y1 - @y2
+calc dz @z1 - @z2
+
+coor trans xdir @dx ydir @dy zdir @dz sele segi ligand_@currligand end
+
+! Print pdb file for test cases
+open unit 1 write form name @pdbDIR/tmp3.pdb
+write coor pdb unit 1
+close unit 1
+
+! Now get current C-X distance 
+coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+set x1 ?xave
+set y1 ?yave
+set z1 ?zave
+
+coor stat sele atom ligand_@currligand 1 @liglink1 show end
+set x2 ?xave
+set y2 ?yave
+set z2 ?zave
+
+calc dx @x2 - @x1
+calc dy @y2 - @y1
+calc dz @z2 - @z1
+
+! Translation vector size
+calc tvec sqrt( @dx*@dx + @dy*@dy + @dz*@dz )
+! Normalize vector and multiply by C-X bond distance difference vector size
+calc dx @dx / @tvec
+calc dy @dy / @tvec
+calc dz @dz / @tvec
+calc tvec @rcx - @tvec   ! Difference vector size
+calc dx @dx * @tvec
+calc dy @dy * @tvec
+calc dz @dz * @tvec
+
+coor trans xdir @dx ydir @dy zdir @dz sele segi ligand_@currligand end
+
+! Print pdb file for test cases
+open unit 1 write form name @pdbDIR/tmp4.pdb
+write coor pdb unit 1
+close unit 1
+
+return
+

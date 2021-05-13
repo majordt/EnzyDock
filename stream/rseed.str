@@ -1,0 +1,12 @@
+************************************************************
+*                Start rseed.str                           *
+************************************************************
+* Generate seeds for random number engine
+* 
+
+! Initialize random number engine
+stream @strDIR/seed.str
+random clcg uniform iseed @seed1 @seed2 @seed3 @seed4
+
+return
+

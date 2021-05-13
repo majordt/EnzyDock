@@ -1,0 +1,401 @@
+************************************************************
+*                  Start dock_ligand.inp                   *
+************************************************************
+* Docking ligands to the protein, with full mm and qmmm 
+* off-grid refinement. Uses Simulated Annealing MD (SAMD)
+* and Monte Carlo (MC or SAMC)
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START DOCK SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! DTM: Check delete command
+if ?nres .gt. 0 then dele atom
+
+! Initiate needed variables
+set microiter 1 
+    
+! Reads in the grid
+if @usegrid .eq. true then
+   if @gridon .ne. true then
+      stream @strDIR/read_grid.str
+   endif
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END DOCK SETUP, START DOCKING
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Docking micro-iterations
+label dock_microiter
+
+    ! DTM: Check delete command
+    if ?nres .gt. 0 then dele atom
+
+    if @usegrid .eq. false stream @strDIR/read_protein.str
+
+    ! Reads in the PDBs for the random conformer of the 
+    ! ligand
+    goto readligstruct
+    label after_readligstruct
+
+    define ligand sele segid ligand_@currligand show end 
+
+    ! Move the ligand to the grid
+    coor stat sele ligand end
+    calc xmov = - ?xave + @xcen
+    calc ymov = - ?yave + @ycen
+    calc zmov = - ?zave + @zcen
+! DTM: Allow random translation within active site
+    if maxtrans .gt. @gridsize set maxtrans @gridsize ! Make sure user didn't allow translation outside grid
+    calc xmov = @xmov + (?rand - 0.5)*@maxtrans
+    calc ymov = @ymov + (?rand - 0.5)*@maxtrans
+    calc zmov = @zmov + (?rand - 0.5)*@maxtrans
+    coor trans xdir @xmov ydir @ymov zdir @zmov sele ligand end
+    coor stat sele ligand end
+
+!    goto rotate 
+!    label after_rotate
+
+    ! Read in flexible residues. These are treated explicitly.
+    if @flexibledocking .eq. false then
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors) end
+    else 
+        ! Cofactor patched to protein
+        if @usegrid .eq. true then
+           stream @strDIR/read_flex.str ! Read flexible residues, includes patching
+           if patch_cofact .eq. true stream @strDIR/cofact_patch_ongrid.str ! Read cofactor patching (grid)
+           define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch - Added in v1.0d
+           stream @strDIR/define_flex_ongrid.str  ! Define flexible residue variables again after patching (grid)
+        else
+           if patch_cofact .eq. true stream @strDIR/cofact_patch_offgrid.str ! Read cofactor patching (no grid)
+           define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
+           stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx) show end
+    endif
+
+    ! Do MC simulations without restraints
+    stream @strDIR/clear_restraints.str
+
+    ! Will look for water pdb file and read if present 
+    stream @strDIR/read_water.str
+
+    ! If MC requested, to rigid MC translation and rotation sampling
+    if @mcflag .eq. true then
+       grid off
+       if @usegrid .eq. true then
+           grid on
+       endif
+       nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+          vswitch switch @softon
+       energy
+       stream @strDIR/mc_trot.str
+    else ! Do random rigid translation and rotation
+       goto rotate
+       label after_rotate
+    endif
+
+    ! Covalent docking setup
+    if @covalent .eq. true then
+
+       stream @strDIR/cov_mov_lig.str        ! Move ligand into position for covalent bonding
+       if @usegrid .eq. true then
+          stream @strDIR/cov_generate_ongrid.str  ! Patch covalent link between protein and ligand
+          define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch - Added in v1.0d
+          stream @strDIR/define_flex_ongrid.str   ! Define flexible residue variables again after patching (grid)
+       else
+          stream @strDIR/cov_generate_offgrid.str  ! Patch covalent link between protein and ligand
+          define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
+          stream @strDIR/define_flex_offgrid.str   ! Define flexible residue variables again after patching (no grid)
+       endif
+
+    endif   
+
+    ! Covalent link between ligand and cofactor
+    if @{patch_lig_cofact} .eq. true then
+       !stream @strDIR/cov_mov_lig.str        ! Move ligand into position for covalent bonding (doesn't work here, rewrite)
+       stream @strDIR/cov_ligcofac.str  ! Patch covalent link between ligand and cofactor
+       define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
+       if @usegrid .eq. true then
+          stream @strDIR/define_flex_ongrid.str   ! Define flexible residue variables again after patching (grid)
+       else
+          stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
+       endif
+       ! Do another round of MC translation/rotations to bring ligand close to cofactor
+       if @mcflag .eq. true then
+          grid off
+          if @usegrid .eq. true then
+              grid on
+          endif
+          nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+             vswitch switch @softon
+          energy
+          stream @strDIR/mc_trot.str
+       endif
+    endif
+
+    grid off
+    if @usegrid .eq. true then
+        grid on
+    endif
+    nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+       vswitch switch @softon
+    energy
+    if mcflag .eq. true stream @strDIR/mc_tors.str        ! MC simulation of ligand torsional angles
+
+    !endif
+
+    stream @strDIR/clear_restraints.str
+
+    ! Calculates the energy of the ligand in the grid
+    grid off
+    if @usegrid .eq. true then
+        grid on
+    endif
+
+    nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+       vswitch switch @softon
+
+    energy
+     
+    set ener0 ?ener
+
+    bomlev -1
+    open unit 101 read form name @stdDIR/userrestraints.str
+    if ?iostat .ne. -1 then
+       stream @stdDIR/userrestraints.str
+    else
+       echo EnzyDock WARNING: userrestraints.str file missing!
+       echo EnzyDock WARNING: See documentation
+    endif
+    bomlev @bomblevel
+
+    if @currligand .ne. 1 then
+        stream @strDIR/consensus_docking.str
+    endif
+
+    ! Stream in backbone flexible definition here since it includes harmonic
+    ! restraints that were cleared in clear_restraints.str and consensus_docking.str
+    ! Only necessary when using grid
+    if @usegrid .eq. true stream @strDIR/back_flex.str
+
+    ! Do Simulated Annealing Molecular Dynamics
+    if @samd .eq. true stream @strDIR/samd.str
+
+    ! Switch off soft potentials for final minimization
+    nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+       vswitch switch @softoff
+
+    ! Minimization of the ligand within the grid
+    goto postminimize
+    label after_postminimize
+
+    ! Unit 3 was opened in enzydock.inp 
+    write title unit 3
+    * @enert @intere @intere0 @ener0 @runid_@iter_@microiter
+
+    goto seeifmin
+    label after_seeifmin
+
+    ! File names here must not be changed as they are used in clustering later
+    open write unit 1 card name @resDIR/@currligand_@runid_@iter_@microiter.crd
+    write coor unit 1 card
+
+! Save for rmsd calculation
+    open write unit 1 card name @resDIR/lig_@currligand_@runid_@iter_@microiter.crd
+    write coor unit 1 card sele ligand end
+
+    open write unit 1 card name @resDIR/@currligand_@runid_@iter_@microiter.pdb
+    write coor unit 1 pdb 
+    close unit 1
+
+! DTM - save for clustering calculations
+! Will be copied into correct directory by clustering program
+    open write unit 1 card name @resDIR/lig_@currligand_@runid_@iter_@microiter.pdb
+    write coor unit 1 pdb sele ligand end
+    close unit 1
+
+! Write flexible residues for clustering part
+! Will be copied into correct directory by clustering program
+    if @flexibledocking .eq. true then
+       set c 1
+       label write_flex
+
+          if @numflex@@c .lt. 1 goto skip_write_flex
+
+          open write unit 1 form name @resDIR/flex@c_@currligand_@runid_@iter_@microiter.crd
+          write coor card unit 1 sele flex@c end
+
+          open unit 1 form write name @resDIR/flex@c_@currligand_@runid_@iter_@microiter.pdb
+          write coor pdb unit 1 sele flex@c end
+          close unit 1
+
+          label skip_write_flex
+
+          incr c
+       if c .le. @proteinunit goto write_flex
+    endif
+
+!    stream @strDIR/clear_restraints.str
+
+    incr microiter
+ 
+if microiter .le. @maxmit then goto dock_microiter
+
+grid off
+
+
+!***********************************************************
+!*                  End dock_ligand.inp                    *
+!***********************************************************
+
+return
+stop
+         
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START READLIGSTRUCT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Reads in the ligand conformer structure
+label readligstruct 
+
+    set NumObject ?nres
+
+    open unit 1 form read name @psfDIR/@currligand_@runid_0.psf
+    read psf card unit 1 !append Causes MOLNT in pdf file to grow
+    close unit 1
+    
+    open unit 1 form read name @resDIR/@currligand_@runid_@iter_0.crd
+    read coor card unit 1 offset @NumObject
+!    close unit 1
+
+    define cofactors sele none end
+    if @numcofactor .gt. 0 then 
+       stream @strDIR/generate_cofactors.str
+    endif
+
+!    if @currligand .ne. 1 then
+!        stream @strDIR/consensus_docking.str
+!    endif 
+goto after_readligstruct
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START ROTATE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Rotates the ligand around a random number of degrees
+label rotate
+    coor stat mass sele ligand end
+    !calc phi = ?rand * @maxrotangle
+
+! DTM: remove 0.1 factor
+calc phi = ?rand * @maxrotangle !* 0.1
+
+! DTM
+    calc xrot = ?rand
+    calc yrot = ?rand
+    calc zrot = ?rand
+    calc xxcen = ?xave
+    calc yycen = ?yave
+    calc zzcen = ?zave
+    !calc xrot = ?xave
+    !calc yrot = ?yave 
+    !calc zrot = ?zave
+
+    coor rotate xdir @xrot ydir @yrot zdir @zrot -
+         xcen @xxcen ycen @yycen zcen @zzcen phi @phi -
+         select ligand end
+
+goto after_rotate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START POST DOCKING MINIMIZATION
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label postminimize
+
+        skipe none 
+     
+        mini sd nstep @mstep nprint @mprint
+        mini abnr nstep @mstep nprint @mprint
+
+        set int2 false
+        if @numcofactor .gt. 0 then set int2 true
+        if @flexibledocking .eq. true then set int2 true
+        if @flexibleback .eq. true then stream @strDIR/back_clear_restraints.str   ! Remove restraints on backbone atoms
+        if @int2 .eq. true then
+           inte sele ligand end sele .not. ligand end
+        else
+           inte sele ligand end
+        endif
+        ! Non-bonded interaction energy should also include bestfit and noe restraints
+        set intere0 ?ener 
+        energy
+        calc intere = @intere0 + ?harm + ?noe  ! Total non-bonded interaction energy
+        set enert ?ener   ! Total energy
+        calc enert0 = @enert - ?harm - ?noe
+
+goto after_postminimize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SEEIFMIN
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Checks to see if the current ligand structure is a 
+! new minimum, and if it is, stores its coordinates
+
+label seeifmin
+    if @currdock .eq. 1 then
+        set mininte @intere
+        goto write_min
+    else
+        if @intere .lt. @mininte then
+            set mininte @intere
+            goto write_min
+        endif
+        goto after_write_min
+    endif
+
+    label write_min
+
+       open write unit 1 form name @resDIR/mindock_@currligand.crd
+       write coor card unit 1 
+
+       open unit 1 form write name @resDIR/mindock_@currligand.pdb
+       write coor pdb unit 1
+       close unit 1
+
+       open write unit 1 form name @resDIR/lig_mindock_@currligand.crd
+       write coor card unit 1 sele ligand end 
+
+       open unit 1 form write name @resDIR/lig_mindock_@currligand.pdb
+       write coor pdb unit 1 sele ligand end
+       close unit 1
+
+       if @flexibledocking .eq. true then
+          set c 1
+          label write_flex_min
+
+             if @numflex@@c .lt. 1 goto skip_write_flex_min
+
+             open write unit 1 form name @resDIR/flex@c_mindock_@currligand.crd
+             write coor card unit 1 sele flex@c end
+
+             open unit 1 form write name @resDIR/flex@c_mindock_@currligand.pdb
+             write coor pdb unit 1 sele flex@c end
+             close unit 1
+
+             label skip_write_flex_min
+         
+             incr c
+          if c .le. @proteinunit goto write_flex_min
+       endif
+
+    label after_write_min
+
+    open write unit 1 form name @psfDIR/mindock_@currligand.psf
+    write psf card unit 1
+    close unit 1
+
+    incr currdock
+
+goto after_seeifmin    

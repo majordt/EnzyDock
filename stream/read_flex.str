@@ -1,0 +1,50 @@
+************************************************************
+*                  Start read_flex.str                     *
+************************************************************
+* Read in flexible residues
+*
+
+!print coor 
+
+! Read flexible residues 
+set c 1
+label read_flex_loop
+
+   if @numflex@@c .lt. 1 goto skip_read_flex_loop
+
+   set NumObject ?nres
+
+   open read unit 1 form name @pdbDIR/@proteinname_flex@c.pdb
+   read sequ pdb unit 1
+   generate FLX@c first none last none setup
+   rewind unit 1
+   read coor pdb unit 1 offset @NumObject
+   close unit 1
+
+!   define flex@c sele segi FLX@c show end
+!   define flex sele flex .or. flex@c show end
+
+   label skip_read_flex_loop
+
+   incr c
+
+if c .le. @proteinunit goto read_flex_loop
+
+! Read patches for active site residues
+!if npatch .lt. 1 goto skip_patch
+
+!set c 1
+!label read_patch
+
+! Patch residues that change during reaction (on grid)
+bomlev -1
+stream @strDIR/patch_ongrid.str
+
+!   if @currligand .eq. @patch@@c then stream @strDIR/patch_@c.str
+
+!   incr c
+!if c .le. @npatch goto read_patch
+!label skip_patch
+
+return
+

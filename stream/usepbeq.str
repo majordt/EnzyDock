@@ -1,0 +1,173 @@
+************************************************************
+*                  Start usepbeq.str                       *
+************************************************************
+*
+
+! Based on script written for charmm-gui
+
+! Grid is cleared in enzydock.inp
+!grid off
+
+! Must use infinite cutoff for PBEQ
+set gbctnb  999.0
+set gbctfnb 998.0
+set gbctonb 997.0
+
+nbond atom switch cdie vdw vswitch -
+      cutnb @gbctnb  ctofnb @gbctfnb  ctonnb @gbctonb
+
+! Read all PBEQ radii and check if some are missing
+prnlev 0
+stream @strDIR/pbeq/radius_pbeq.str
+prnlev 5
+
+scalar wmain statistics select .not. type H* end
+define check select (.not type H* ) .and. ( property wmain .eq. 0.0 ) show end
+if ?nsel .ne. 0 then       !some heavy atom have a zero radius
+   set missingradius true
+   return
+endif
+
+coor stat
+calc pbxcen = ( ?xmax + ?xmin ) / 2.0
+calc pbycen = ( ?ymax + ?ymin ) / 2.0
+calc pbzcen = ( ?zmax + ?zmin ) / 2.0
+
+calc nclxc = int ( ( @ledge * 4.0 + ?xmax - ?xmin ) / @dcelc )
+calc nclyc = int ( ( @ledge * 4.0 + ?ymax - ?ymin ) / @dcelc )
+calc nclzc = int ( ( @ledge * 4.0 + ?zmax - ?zmin ) / @dcelc )
+
+if focus eq 1 then
+   calc nclxf = int ( ( @ledge * 1.0 + ?xmax - ?xmin ) / @dcelf )
+   calc nclyf = int ( ( @ledge * 1.0 + ?ymax - ?ymin ) / @dcelf )
+   calc nclzf = int ( ( @ledge * 1.0 + ?zmax - ?zmin ) / @dcelf )
+endif
+
+scalar charge store 1
+scalar wmain  store 2
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Calculations for protein-ligand complex (P + L)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+pbeq
+
+! Complex
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsw conc @conc intbp @options -
+      xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsw conc @conc focus @options -
+       xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+endif
+
+set ener80ab = ?enpb
+
+! In reference environment
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsr intbp @options -
+      xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsr focus @options -
+       xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+endif
+
+set ener1ab = ?enpb
+
+calc denerab  = @ener80ab - @ener1ab
+
+reset
+end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Calculations for ligand
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+scalar charge recall 1
+scalar wmain  recall 2
+scalar charge set 0.0 sele .not. segid ligand_@currligand end
+scalar wmain  set 0.0 sele .not. segid ligand_@currligand end
+
+pbeq
+
+! Ligand
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsw conc @conc intbp @options -
+      xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsw conc @conc focus @options -
+       xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+endif
+
+set ener80a = ?enpb
+
+! in reference environment
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsr intbp @options -
+      xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsr focus @options -
+       xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+endif
+
+set ener1a = ?enpb
+
+calc denera  = @ener80a - @ener1a
+
+reset
+end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Calculations for the Protein-cofactor
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+scalar charge recall 1
+scalar wmain  recall 2
+scalar charge set 0.0 sele segid ligand_@currligand end
+scalar wmain  set 0.0 sele segid ligand_@currligand end
+
+pbeq
+
+! For the rest of the chains
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsw conc @conc intbp @options -
+      xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsw conc @conc focus @options -
+       xbcen @pbxcen  ybcen @pbycen  zbcen @pbzcen 
+endif
+
+set ener80b = ?enpb
+
+! In reference environment
+solve nclx @nclxc ncly @nclyc nclz @nclzc dcel @dcelc epsp @epsp epsw @epsr intbp @options -
+      xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+if focus eq 1 then
+ solve nclx @nclxf ncly @nclyf nclz @nclzf dcel @dcelf epsp @epsp epsw @epsr focus @options -
+       xbcen @pbxcen ybcen @pbycen zbcen @pbzcen
+endif
+
+set ener1b = ?enpb
+
+calc denerb  = @ener80b - @ener1b
+
+reset
+end
+
+scalar charge recall 1
+scalar wmain  recall 2
+
+calc dener   = @denerab  - @denera  - @denerb   ! Electrostatic solvation energy difference
+calc dener80 = @ener80ab - @ener80a - @ener80b  ! Solvent mediated protein-ligand interaction energy
+                                                ! dener + coulombic interaction energy / epsr
+calc dener1  = @ener1ab  - @ener1a  - @ener1b   ! coulombic interaction energy / epsr
+
+!
+!! You can see if dener1 is indeed vacuum coulombic interaction energy (epsr should be one)
+!! by uncommenting below lines.
+!
+!nbond atom switch cdie vdw vswitch -
+!      ctonnb 990.0 ctofnb 991.0 cutnb 999.0
+!
+!interaction sele segid prob end sele .not. segid prob end
+!
+
+!calc dener = @dener80 ! for print-out purpose in the main input
+
+return
+

@@ -1,0 +1,24 @@
+* Monte Carlo delete moves
+* Moves deleted must match the ones added in mc_add.str
+*
+
+set i 1
+set n @ntors
+
+if @ntors .ge. 1 then
+
+   calc tl @in1 + 1
+
+   label delete_tors
+
+      move dele label tr@tl
+
+      incr tl
+      incr i
+      decr ntors
+
+   if i .le. @n goto delete_tors
+
+endif
+
+return

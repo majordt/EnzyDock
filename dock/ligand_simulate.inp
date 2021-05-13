@@ -1,0 +1,107 @@
+************************************************************
+*                 Start ligand_simulate.inp                *
+************************************************************
+*   Generate initial ligand configurations
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Reduce bomblevel to allow reading of propyl ring
+bomlev -1
+stream @strDIR/read_ligand.str @in1
+bomlev @bomblevel
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! First do some random rotation
+define ligand sele segi ligand_@currligand end
+coor stat mass sele ligand end
+calc phi = ?rand * @maxrotangle !* 0.1
+calc xrot = ?rand
+calc yrot = ?rand
+calc zrot = ?rand
+calc xxcen = ?xave
+calc yycen = ?yave
+calc zzcen = ?zave
+
+coor rotate xdir @xrot ydir @yrot zdir @zrot -
+     xcen @xxcen ycen @yycen zcen @zzcen phi @phi -
+     select ligand end
+
+if @maxit .eq. 0 goto ligand_minimize
+if @ligmcflag .ne. true goto ligand_minimize
+
+! Switch off covalent flag at this stage (reset later below)
+set cflag false
+if @covalent .eq. true set cflag true
+set covalent false
+! Prepare for torsional MC
+stream @strDIR/mc/mc_add.str
+! If no torsions found, just minimize
+if @ntors .eq. 0 goto ligand_minimize
+
+set iuncrd -11
+set nsavc    0
+
+stream @strDIR/seed.str
+
+set idomcfrq 5
+if @idomcfrq .gt. @steps then
+   set idomcfrq 1
+endif
+
+nbonds cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb vswitch switch eps @eps @dielec
+
+mini abnr nsteps @mstep nprint @mprint
+
+set randnum ?rand
+calc temp (@randnum * (@maxligmctemp - @minligmctemp)) + @minligmctemp ! added by M. Shimshi
+
+! Do standard single temperature MC simulation
+mc temperature @temp nsteps @ligmcsteps -
+   iseed @seed1 @seed2 @seed3 @seed4 -
+   idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+   iuncrd @iuncrd nsavc @nsavc
+
+stream @strDIR/mc/mc_delete.str
+
+if @cflag .eq. true set covalent true
+
+goto ligand_minimize
+
+label after_ligand_minimize
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END MC, START MINI
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+label ligand_minimize
+
+    nbonds cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb vswitch switch eps @eps @dielec
+    mini abnr nstep @mstep nprint @mprint
+
+    open unit 1 form write name @resDIR/@currligand_@runid_@iter_0.pdb
+    write coor pdb unit 1
+    close unit 1
+ 
+    if iter .eq. 1 then
+       open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
+       write psf card unit 1
+       close unit 1
+    endif
+ 
+    open write unit 1 card name @resDIR/@currligand_@runid_@iter_0.crd
+    write coor unit 1 card 
+    close unit 1 
+
+    goto after_ligand_minimize
+  
+!**********************************************************
+!                  End ligand_simulate.inp
+!**********************************************************

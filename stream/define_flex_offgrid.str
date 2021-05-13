@@ -1,0 +1,53 @@
+************************************************************
+*                  Start define_flex.str                   *
+************************************************************
+* A file to set up list of flexible binding site residues
+* This routine is invoked while entire protein is still
+* present (before deleting non-flexible residues)
+* Do not make Pro or Gly flexible (probably ok to include)!
+* 
+
+! Iterative build up of flexible list of residues
+
+define flex sele none end
+
+set b 1
+
+label unit_loop
+
+   set c 1
+
+   define flex@b sele none end
+
+   if @numflex@@b .lt. 1 goto skip_flex_loop
+
+   label flex_loop
+
+     define flex@b sele flex@b .or. segi pep@b .and. (resi @flex@@b@@c) show end
+
+     incr c
+
+   if c .le. @numflex@@b goto flex_loop
+
+   define flex sele flex .or. flex@b show end
+
+   label skip_flex_loop
+
+   incr b
+
+if b .le. @proteinunit goto unit_loop
+
+! Backbone atoms are not flexible unless specifically defined as flexible
+define back sele segi pep* .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) show end
+
+! Define flexible region
+if flexibleback .eq. true then
+   ! If backbone atoms are flexible
+   define flexx sele flex show end
+else
+   define flexx sele flex .and. .not. back show end
+endif
+
+return
+

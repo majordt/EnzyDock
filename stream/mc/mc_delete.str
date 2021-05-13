@@ -1,0 +1,12 @@
+* Monte Carlo delete moves
+* Moves deleted must match the ones added in mc_add.str
+*
+
+if covalent .eq. true then
+ move dele label tr1
+ move dele label tr2
+endif
+! Additional torsional deletions below
+
+return
+

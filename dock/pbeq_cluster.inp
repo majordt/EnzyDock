@@ -1,0 +1,260 @@
+************************************************************
+*                  Start pbeq_cluster.inp                  *
+************************************************************
+* Rescoring the ligand into the protein, with pbeq mm (no grid)
+*
+
+set currligand 1
+
+set epsr   1      ! dielectric constant for the reference environment
+set epsp   1      ! dielectric constant for the protein interior
+set epsw   80     ! solvent dielectric constant
+set conc   0.15   ! salt concentration
+set focus  1      ! to have a refined calculation focused on the site using a finer grid
+set dcelc  1.00   ! the grid spacing in the finite-difference (centered on pbxcen,pbycen,pbzcen)
+set dcelf  0.50   ! the grid spacing in the finite-difference (centered on pbxcen,pbycen,pbzcen)
+set ledge  10     ! distance between a protein atom and grid edge
+                  ! LEdge*2 for coarse-gird calculations and LEdge/2 for fine-grid calculations (see below)
+set options = watr 1.4 reentrant ! Let's use the molecular surface 
+
+label pbeq_loop
+
+   ! Read in number of clusters written by clustering program
+   stream nclusters@currligand.str
+
+   goto write_pbeq_dat
+   label after_write_pbeq_dat
+
+   ! Read minimum ligand structure
+   bomlev -1
+   open unit 1 form read name @psfDIR/all_mm_mindock_@currligand.psf
+   read psf card unit 1 !append
+   close unit 1
+   bomlev @bomblevel
+
+   ! Must read structure here so that we can define groups
+   set iter 1
+
+   open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+   read coor card unit 1 !offset @NumObject
+   close unit 1
+
+   define QMS sele segid ligand_@currligand show end
+
+   if @flexibledocking .eq. true then
+      define flex sele none end
+      set b 1
+      label define_pbeqflex_loop1
+         if @numflex@@b .lt. 1 goto skip_define_pbeqflex_loop1
+         set c 1
+         label define_pbeqflex_loop2
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+            incr c
+         if c .le. @numflex@@b goto define_pbeqflex_loop2
+         label skip_define_pbeqflex_loop1
+         incr b
+      if b .le. @proteinunit goto define_pbeqflex_loop1
+
+      if @flexibledocking .eq. true then
+         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) show end
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+         define flexx sele flex .and. .not. back show end
+         ! Backbone atoms are not flexible unless specifically defined as flexible
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+      endif
+
+      ! If backbone atoms are flexible
+      if flexibleback .eq. true then
+         open unit 31 read form name @strDIR/back_flex.str
+         stream unit 31
+         !stream @strDIR/back_flex.str
+         define back sele back .and. .not. fback end
+      endif
+
+      ! Define flexible region
+      define flexx sele flex .and. .not. back show end
+
+   endif
+   define ligand sele segid ligand_@currligand show end
+   set c 1
+   define cofactors sele none end
+   label read_qcofactors
+      define cofactors sele cofactors .or. segi COF@c show end
+      incr c
+   if c .le. @numcofactor goto read_qcofactors
+
+   !cons harm clear 
+   if @flexibledocking .eq. true then
+      cons fix sele .not. (QMS .or. cofactors .or. flexx) end
+   else
+      cons fix sele .not. (QMS .or. cofactors)  end
+   endif
+ 
+   open write unit 1 form name @psfDIR/all_pbeq_min_@currligand_@runid.psf
+   write psf card unit 1
+   close unit 1
+
+   label pbeq_cluster_loop
+
+     open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+     read coor card unit 1 !offset @NumObject
+     close unit 1
+
+     ! Release fix as fix influences the nbonded list (fix info is stored in psf file after mass column)
+     cons fix sele none end
+
+     stream @strDIR/usepbeq.str
+
+     if missingradius .eq. true goto pbeq_error
+     set missingradius false
+
+!     if @minradius .gt. 0.0 then
+!        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
+!        cons fix sele .not. flexradius end
+!     endif
+!     mini abnr nstep 100
+!     cons fix sele none end
+!     energy
+
+!     set gbswelstat ?gben
+!     set gbswvdw ?asp
+!     calc gbswtot @gbswelstat + @gbswvdw
+!     set gbswtot ?ener
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1 sele QMS show end
+     *  dener: Electrostatic solvation energy difference (P+L-->PL)
+     *  dener80: PL interaction energy in water  
+     *  dener1: PL interaction energy in vacuum
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  dener     dener80     dener1              clustiter
+     * ======================================================
+     *  @dener    @dener80    @dener1   kcal/mol  clust@iter
+     *
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1 sele QMS show end
+     *  dener: Electrostatic solvation energy difference (P+L-->PL)
+     *  dener80: PL interaction energy in water
+     *  dener1: PL interaction energy in vacuum
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  dener     dener80     dener1              clustiter
+     * ======================================================
+     *  @dener    @dener80    @dener1   kcal/mol  clust@iter
+     *
+     close unit 1
+
+     ! Unit 3 was opened below
+     write title unit 3
+     * @dener  @dener80  @dener1  clust@iter
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_pbeq_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/all_pbeq_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1
+     close unit 1
+
+     if @flexibledocking .eq. true then
+
+        if @numcofactor .gt. 0 then
+           open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.crd
+           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+
+           open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+           close unit 1
+        endif
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele QMS .or. flex show end
+        *  dener: Electrostatic solvation energy difference (P+L-->PL)
+        *  dener80: PL interaction energy in water
+        *  dener1: PL interaction energy in vacuum
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  dener     dener80     dener1              clustiter
+        * ======================================================
+        *  @dener    @dener80    @dener1   kcal/mol  clust@iter
+        *
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele QMS .or. flex show end
+        *  dener: Electrostatic solvation energy difference (P+L-->PL)
+        *  dener80: PL interaction energy in water
+        *  dener1: PL interaction energy in vacuum
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  dener     dener80     dener1              clustiter
+        * ======================================================
+        *  @dener    @dener80    @dener1   kcal/mol  clust@iter
+        *
+        close unit 1
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele flex show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele flex show end
+        close unit 1
+
+     endif
+
+     if @numcofactor .gt. 0 then
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele ligand .or. cofactors show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele ligand .or. cofactors show end
+        close unit 1
+     endif
+
+     !print coor
+
+     incr iter
+
+   if @iter .le. @ncluster goto pbeq_cluster_loop
+
+   incr currligand
+
+   dele atoms sele all end
+
+if currligand .le. @lastinter goto pbeq_loop
+
+skip none
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_pbeq_dat
+
+    ! Starts writing the output summary file: Complex
+    open write unit 3 form name @resDIR/@currligand_c_summary_pbeq_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  dener: Electrostatic solvation energy difference (P+L-->PL)
+*  dener80: PL interaction energy in water
+*  dener1: PL interaction energy in vacuum
+*  clustiter: cluster number
+*  dener     dener80     dener1              clustiter
+* ======================================================
+*
+
+goto after_write_pbeq_dat
+
+label pbeq_error
+   echo EnzyDock WARNING: Missing parameters for PBEQ... skipping
+   echo Check file @strDIR/pbeq/radius_pbeq.str
+return
+
+

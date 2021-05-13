@@ -1,0 +1,21 @@
+************************************************************
+*                      Start read_protein.str              *
+************************************************************
+* Read protein psf and pdb
+*
+
+! Read protein
+open unit 1 form read name @psfDIR/@proteinname_withoutligand.psf
+read psf card unit 1 append
+close unit 1
+
+open unit 1 read form name @pdbDIR/@proteinname_withoutligand.pdb
+read coor pdb unit 1 resid
+close unit 1
+
+!***********************************************************
+!*                      End read_protein.str
+!***********************************************************
+
+return
+

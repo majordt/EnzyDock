@@ -1,0 +1,14 @@
+************************************************************
+*                Start seed.str                            *
+************************************************************
+* Generate seeds for random number engine
+* 
+
+! Random number seeds random number seeds
+calc seed1 = int(?rand * 100000000)
+calc seed2 = int(?rand * 10000000)
+calc seed3 = int(?rand * 1000000)
+calc seed4 = int(?rand * 100000)
+
+return
+

@@ -1,0 +1,308 @@
+************************************************************
+*                  Start qmmm_cluster.inp                  *
+************************************************************
+* Docking the ligand into the protein, with qmmm (no grid)
+* Note that Q-Chem interface uses the following file units:
+* 11,12,14,70,71,90,91 (streaming uses unit 99) 
+*
+
+set currligand 1
+
+! First check if FF parameters are defined for link atom
+if covalent .eq. true then
+ if @?qmlink .eq. 0 goto qmmm_error
+ if @?liglink1 .eq. 0 goto qmmm_error
+endif
+
+! Read topology and parameter files
+!stream @strDIR/top_prm.str
+
+! Read protein
+!stream @strDIR/read_protein.str
+
+! Read cofactors
+!if @cofactor .eq. true then stream @strDIR/generate_cofactors.str
+
+!set currligand 1
+
+label qmmm_loop
+
+   ! Read in number of clusters written by clustering program
+   stream nclusters@currligand.str
+
+   goto write_qmmm_clust_dat
+   label after_write_qmmm_clust_dat
+
+   !set NumObject ?nres
+
+   if ?qchem .eq. 1 then
+      set 0 @qmcharge@@currligand
+      system "../scripts/write_qchem_inp.py @0"
+   endif
+
+   ! Reads in a new ligand
+   bomlev -1
+   open unit 31 read form name @topDIR/ligand_@currligand.str
+   if ?iostat .ne. -1 then
+      stream unit 31
+   else
+     ! This is a critical warning
+     echo EnzyDock WARNING: Ligand rtf/prm file not found.
+     stop
+   endif
+   bomlev @bomblevel
+
+   ! Read minimum ligand structure
+   bomlev -1
+   open unit 1 form read name @psfDIR/all_mm_mindock_@currligand.psf
+   read psf card unit 1 !append
+   close unit 1
+   bomlev @bomblevel
+
+   ! Must read structure here so that we can define groups
+   set iter 1
+
+   open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+   read coor card unit 1 !offset @NumObject
+   close unit 1
+
+   ! Read flexible part of protein that was modified in MM minimization
+   ! Overwrites existing coordinates.
+   !if @flexibledocking .eq. true then
+   !   open read unit 1 form name @resDIR/flex_mm_mindock_@currligand.crd
+   !   read coor card unit 1 !offset @NumObject
+   !   close unit 1
+   !endif
+
+   !print coor
+
+   ! Remove restraints for final QM/MM minimization
+   define QMS sele segid ligand_@currligand show end
+   
+   if @flexibledocking .eq. true then
+      define flex sele none end
+      set b 1
+      label define_qflex_loop1
+         if @numflex@@b .lt. 1 goto skip_define_qflex_loop1
+         set c 1
+         label define_qflex_loop2
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+            incr c
+         if c .le. @numflex@@b goto define_qflex_loop2
+         label skip_define_qflex_loop1
+         incr b
+      if b .le. @proteinunit goto define_qflex_loop1
+
+      if @flexibledocking .eq. true then
+         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) show end
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+         define flexx sele flex .and. .not. back show end
+         ! Backbone atoms are not flexible unless specifically defined as flexible
+ !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+      endif
+
+      ! If backbone atoms are flexible
+      if flexibleback .eq. true then
+         open unit 31 read form name @strDIR/back_flex.str
+         stream unit 31
+         !stream @strDIR/back_flex.str
+         define back sele back .and. .not. fback end
+      endif
+
+      ! Define flexible region
+      define flexx sele flex .and. .not. back show end
+
+   endif
+   define ligand sele segid ligand_@currligand show end
+   set c 1
+   define cofactors sele none end
+   label read_qcofactors
+      define cofactors sele cofactors .or. segi COF@c show end
+      incr c
+   if c .le. @numcofactor goto read_qcofactors
+
+   open unit 31 read form name @strDIR/useqmmm.str
+   stream unit 31
+   !stream @strDIR/useqmmm.str
+
+   !cons harm clear 
+   if @flexibledocking .eq. true then
+      cons fix sele .not. (QMS .or. cofactors .or. flexx) end
+   else
+      cons fix sele .not. (QMS .or. cofactors) end
+   endif
+   ! If minimization radius is set, do minimization of nearby residues as well
+   ! This definition overrides earlier fixes
+   if @minradius .gt. 0.0 then
+      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
+      cons fix sele .not. flexradius end
+   endif
+   !noe 
+   !   reset
+   !end
+
+!   stream @strDIR/useqmmm.str
+ 
+   open write unit 1 form name @psfDIR/all_qmmm_min_@currligand_@runid.psf
+   write psf card unit 1
+   close unit 1
+
+   label qmmm_cluster_loop
+
+     open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+     read coor card unit 1 !offset @NumObject
+     close unit 1
+
+     ! Do QM/MM minimization, allow continuation even if SCF not fully converged
+     bomlev -1
+     ! ABNR seems to not release memory properly, if called many times could become a problem.
+     ! Possible solution is to fix code or just change to another minimizer like CG
+     mini sd   nstep @qmstep nprint @qmprint
+     mini powe nstep @qmstep nprint @qmprint
+     mini abnr nstep @qmstep nprint @qmprint
+!     mini conj nstep @qmstep nprint @qmprint
+     bomlev @bomblevel
+
+     if ?qchem .eq. 1 then
+        set evdw ?vdw
+     else
+        set evdw ?qmvd
+     endif
+     calc qmtot ?qmel + @evdw
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_qmmm_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1 sele QMS show end
+     *  qmtot: Total QM/MM energy (qmel + qmvdw)
+     *  qmel:  QM/MM electrostatic energy
+     *  qmvdw: QM/MM vdW energy
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  qmtot     qmel     qmvdw                  clustiter
+     * ======================================================
+     *  @qmtot    ?qmel    @evdw     kcal/mol     clust@iter
+     *
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_qmmm_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1 sele QMS show end
+     *  qmtot: Total QM/MM energy (qmel + qmvdw)
+     *  qmel:  QM/MM electrostatic energy
+     *  qmvdw: QM/MM vdW energy
+     *  clustiter: cluster number
+     *  currligand: @currligand
+     *  runid: @runid
+     *  qmtot     qmel     qmvdw                  clustiter
+     * ======================================================
+     *  @qmtot    ?qmel    @evdw     kcal/mol     clust@iter
+     *
+     close unit 1
+
+     ! Unit 3 was opened in enzydock.inp
+     write title unit 3
+     * @qmtot    ?qmel    @evdw    clust@iter
+
+     open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_qmmm_min_clust@iter_@currligand_@runid.crd
+     write coor card unit 1
+
+     open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/all_qmmm_min_clust@iter_@currligand_@runid.pdb
+     write coor pdb unit 1
+     close unit 1
+
+     if @flexibledocking .eq. true then
+
+        if @numcofactor .gt. 0 then
+           open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_qmmm_min_clust@iter_@currligand_@runid.crd
+           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+
+           open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_qmmm_min_clust@iter_@currligand_@runid.pdb
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+           close unit 1
+        endif
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_qmmm_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele QMS .or. flex show end
+        *  qmtot: Total QM/MM energy (qmel + qmvdw)
+        *  qmel:  QM/MM electrostatic energy
+        *  qmvdw: QM/MM vdW energy
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  qmtot     qmel     qmvdw                  clustiter
+        * ======================================================
+        *  @qmtot    ?qmel    @evdw     kcal/mol     clust@iter
+        *
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_qmmm_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele QMS .or. flex show end
+        *  qmtot: Total QM/MM energy (qmel + qmvdw)
+        *  qmel:  QM/MM electrostatic energy
+        *  qmvdw: QM/MM vdW energy
+        *  clustiter: cluster number
+        *  currligand: @currligand
+        *  runid: @runid
+        *  qmtot     qmel     qmvdw                  clustiter
+        * ======================================================
+        *  @qmtot    ?qmel    @evdw     kcal/mol     clust@iter
+        *
+        close unit 1
+
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_qmmm_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele flex show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_qmmm_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele flex show end
+        close unit 1
+
+     endif
+
+     if @numcofactor .gt. 0 then
+        open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_qmmm_min_clust@iter_@currligand_@runid.crd
+        write coor card unit 1 sele ligand .or. cofactors show end
+
+        open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_qmmm_min_clust@iter_@currligand_@runid.pdb
+        write coor pdb unit 1 sele ligand .or. cofactors show end
+        close unit 1
+     endif
+
+     !print coor
+
+     incr iter
+
+   if @iter .le. @ncluster goto qmmm_cluster_loop  
+
+   incr currligand
+
+   dele atoms sele all end
+
+if currligand .le. @lastinter goto qmmm_loop
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_qmmm_clust_dat
+
+    ! Starts writing the output summary file
+    open write unit 3 form name @resDIR/@currligand_summary_qmmm_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  qm/mm(tot): qm/mm potential energy
+*  qm/mm(elstat): electrostatic part of qm/mm energy
+*  qm/mm(vdw): vdw part of qm/mm energy
+*  clustiter: cluster number
+*  currligand: @currligand
+*  runid: @runid
+*  qm/mm(tot)     qm/mm(elstat)     qm/mm(vdw)     clustmiter
+* ============================================================
+* 
+
+goto after_write_qmmm_clust_dat
+
+label qmmm_error
+   echo EnzyDock WARNING: Missing parameters for QM/MM... skipping
+return
+
+

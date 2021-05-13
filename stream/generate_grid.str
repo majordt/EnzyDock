@@ -1,0 +1,86 @@
+************************************************************
+*                   generate_grid.str                      *
+************************************************************
+* Sets up the parameters for the grid and makes the grid
+*
+
+lower
+prnlev 3
+
+fast on
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START GRID SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START GETGRIDEXTENTS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Use center of protein active site
+
+! Set grid dimensions
+set xmax @gridsize
+set ymax @gridsize
+set zmax @gridsize
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END GRID SETUP, START GRID DEFINITIONS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Generate grid points using probe
+
+read sequ card
+* Probe
+*
+1
+  prob
+
+generate prob first NONE last NONE setup warn
+
+scalar x set @xcen select segid prob end
+scalar y set @ycen select segid prob end
+scalar z set @zcen select segid prob end
+
+cons fix select .not. segid  prob end
+
+skipe all excl vdw elec
+energy cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+   @griddielec eps @grideps vswitch switch inbfrq 1 -
+   @gridsoft
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!             END GRID DEFINITIONS, START GRID GENERATION
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Generate grid
+
+open unit 3 write @gform name @scr1DIR/@gridname.@gfext
+title
+* Grid for @proteinname 
+*
+ 
+grid generate xmax @xmax ymax @ymax zmax @zmax -
+    xcen @xcen ycen @ycen zcen @zcen -
+    force 300.0 dgrid @deltagrid -
+    select segid prob end -
+    outu 3 @gform
+
+grid off
+skipe none
+
+set gridone true
+set gridon  true
+
+dele atom sele segid prob end
+
+delete atom
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END GRID GENERATION
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!**********************************************************
+!*                 End generate_grid.str
+!**********************************************************
+
+return
+

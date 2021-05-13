@@ -1,0 +1,145 @@
+#!/home/qnt/majort/anaconda3/bin/python3.6
+
+import sys
+
+def write_header():
+    print("\nQ-Chem input writer program for EnzyDock\nCopyright © 2020 Dan T. Major\n")
+
+def write_file1(file, qm_charge):
+    file.write(
+'''$comment
+qchem control file
+qm/mm EnzyDock simulations
+$end
+
+$rem
+exchange              m062x
+basis                 gen
+print_general_basis   true
+qm_mm                 true
+jobtype               sp
+symmetry              off
+sym_ignore            true
+print_input           false
+qmmm_print            true
+max_scf_cycles        1000
+thresh                8
+scf_convergence       5
+incdft                false
+scf_guess             core
+xc_grid               2
+$end
+
+$basis
+h
+3-21g
+****
+c
+3-21g
+****
+n
+3-21g
+****
+o
+3-21+g
+****
+f
+3-21g
+****
+p
+3-21g*
+****
+s
+3-21+g*
+****
+cl
+3-21+g*
+****
+br
+3-21+g
+****
+$end
+
+$molecule\n''')
+
+    line = str(qm_charge) + "  1\n"
+    file.write(line)
+    line = "$end\n"
+    file.write(line)
+
+def write_file2(file, qm_charge):
+    file.write(
+'''$comment
+qchem control file
+EnzyDock qm/mm simulations
+$end
+
+$rem
+exchange              m062x
+basis                 gen
+print_general_basis   true
+qm_mm                 true
+jobtype               force
+symmetry              off
+sym_ignore            true
+print_input           false
+scf_guess             read
+max_scf_cycles        1000
+thresh                8
+scf_convergence       5
+incdft                false
+xc_grid               2 
+$end
+
+$basis
+h
+3-21g
+****
+c
+3-21g
+****
+n
+3-21g
+****
+o
+3-21+g
+****
+f
+3-21g
+****
+p
+3-21g*
+****
+s
+3-21+g*
+****
+cl
+3-21+g*
+****
+br
+3-21+g
+****
+$end
+
+$molecule\n''')
+
+    line = str(qm_charge) + "  1\n"
+    file.write(line)
+    line = "$end\n"
+    file.write(line)
+
+def main():
+    write_header()
+    qm_charge = sys.argv[1]
+    file1 = "../stream/qmmm/qchem_m062x1.inp"
+    file2 = "../stream/qmmm/qchem_m062x2.inp"
+    print("Writing Q-Chem input files: \n", file1, "\n", file2, "\n")
+    file = open(file1,"w")
+    write_file1(file, qm_charge)
+    file = open(file2,"w")
+    write_file2(file, qm_charge)
+
+if __name__ == "__main__":
+    main()
+
+

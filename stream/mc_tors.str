@@ -1,0 +1,201 @@
+************************************************************
+* Perform MC torsional sampling for docking                *
+* MC moves must be added in the mc_add.str files and       *
+* the same moves must be deleted in mc_delete.str          *
+* Done automatically by smiles_tors.py                     *
+************************************************************
+*
+
+!if mc_cov_flag .gt. 0 then goto skip_move
+
+if @covalent .eq. false then
+   ! Rigid body translations of ligand
+   move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label atrn sele segid ligand_@currligand end
+   ! Rigid body rotations of ligand
+   move add mvtp rrot byresidue weight 0.25 dmax 60.0 label arot sele segid ligand_@currligand end
+   ! Link moves so they are done together.
+   move link lab1 atrn lab2 arot
+endif
+!if @water .eq. true then
+   ! Rigid body translations of water molecules
+!   move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label wtrn sele segid CWAT end
+   ! Rigid body rotations of water molecules
+!   move add mvtp rrot byresidue weight 0.25 dmax 360.0 label wrot sele segid CWAT end
+   ! Link moves so they are done together.
+!   move link lab1 wtrn lab2 wrot
+!endif
+bomlev -1
+open unit 101 read form name @stmDIR/mc_add.str
+if ?iostat .ne. -1 then
+   stream @stmDIR/mc_add.str
+else
+   echo EnzyDock WARNING: mc_add.str file missing!
+   echo EnzyDock WARNING: See documentation
+   stop
+endif
+bomlev @bomblevel
+
+set ntors0 @ntors
+if @flexibledocking .eq. true then
+   bomlev -1
+   open unit 101 read form name @stmDIR/mc_sidechains.str
+   if ?iostat .ne. -1 then
+      stream @stmDIR/mc_sidechains.str
+   else
+      echo EnzyDock WARNING: mc_sidechains.str file missing!
+      echo EnzyDock WARNING: See documentation
+      stop
+   endif
+   bomlev @bomblevel
+else
+   ! If not doinf flexible side-chains and no rotatable bonds found, skip MC
+   ! ntors is written by smiles_tors.py and run by mc_add.str and mc_delete.str
+   if @ntors .lt. 1 goto skip_mc
+endif
+
+set iuncrd -11
+set nsavc    0
+if @mcmin .eq. true then   ! write trajectory file
+   set iuncrd 11
+   open write unformatt unit @iuncrd name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd
+   if @mcsteps .gt. 100 then
+      set nsavc  100
+   else
+      set nsavc 1
+   endif
+endif
+
+!incr mc_cov_flag
+
+!label skip_move
+
+stream @strDIR/seed.str
+
+set idomcfrq 5
+if @idomcfrq .gt. @mcsteps then 
+   set idomcfrq 1
+endif
+
+! If simulated annealing MC skip the following parts
+if mcsa .eq. true then
+   if @mchtemp .gt. @mcltemp goto mcsa
+endif
+
+! Do standard single temperature MC simulation
+mc temperature @mctemp nsteps @mcsteps -
+   iseed @seed1 @seed2 @seed3 @seed4 -
+   idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+   iuncrd @iuncrd nsavc @nsavc
+
+! If mcmin flag set, find lowest energy (or interaction energy) structure
+if @mcmin .eq. true then
+
+   open read unfo unit 11 name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd ! read trajectory file
+
+   traj query unit 11
+
+   traj firstu 11 nunit 1 skip 1
+   calc NTot = ?nfile   ! Number of structures in file (from query)
+
+   set mcount 1             ! Counter
+   set mcener 9999.0   ! Initial lowest energy
+
+   label mcmin_loop
+
+      traj read   ! Read structure
+
+      ! Update non-bonded list
+      !update atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+      !       vswitch switch @softon
+
+      gete  ! Get energy
+      if mcener .lt. ?ener goto mcnext
+         coor copy comp
+         set mcener ?ener
+      label mcnext
+      incr mcount
+
+   if mcount .lt. @NTot goto mcmin_loop
+
+   coor copy   ! Copy lowest structure back to main coordinate set
+
+endif
+
+goto skip_mc
+
+! Do MC simulated annealing
+label mcsa
+
+   calc mc_dtemp (@mchtemp - @mcltemp)/@mcycles
+
+   ! Heating
+   set mctemp0 @mcltemp
+   label mc_heat
+
+      mc temperature @mctemp0 nsteps @mcsteps -
+         iseed @seed1 @seed2 @seed3 @seed4 -
+         idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+         iuncrd @iuncrd nsavc @nsavc
+
+      incr mctemp0 by @{mc_dtemp}
+
+   if mctemp0 .le. @mchtemp goto mc_heat
+
+   ! Cooling
+   set mctemp0 @mchtemp
+   label mc_cool
+
+      mc temperature @mctemp0 nsteps @mcsteps -
+         iseed @seed1 @seed2 @seed3 @seed4 -
+         idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+         iuncrd @iuncrd nsavc @nsavc
+
+      decr mctemp0 by @{mc_dtemp}
+
+   if mctemp0 .ge. @mcltemp goto mc_cool
+
+! End of simulated annealing
+
+label skip_mc
+
+! First unlink moves then delete
+if @covalent .eq. false then
+   move link lab1 atrn
+!endif
+!if @water .eq. true then
+!   move link lab1 wtrn
+!endif
+!if @covalent .eq. false then
+   move dele label atrn
+   move dele label arot
+endif
+!if @water .eq. true then
+!   move dele label wtrn
+!   move dele label wrot
+!endif
+bomlev -1
+open unit 101 read form name @stmDIR/mc_delete.str
+if ?iostat .ne. -1 then
+   stream @stmDIR/mc_delete.str
+else
+   echo EnzyDock WARNING: mc_delete.str file missing!
+   echo EnzyDock WARNING: See documentation
+   stop
+endif
+bomlev @bomblevel
+
+if @flexibledocking .eq. true then
+   bomlev -1
+   open unit 101 read form name @stmDIR/mc_sidechains_delete.str
+   if ?iostat .ne. -1 then
+      stream @stmDIR/mc_sidechains_delete.str @ntors0
+   else
+      echo EnzyDock WARNING: mc_sidechains_delete.str file missing!
+      echo EnzyDock WARNING: See documentation
+      stop
+   endif
+   bomlev @bomblevel
+endif
+
+return
+

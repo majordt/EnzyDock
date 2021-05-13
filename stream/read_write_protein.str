@@ -1,0 +1,24 @@
+************************************************************
+*           Start read_write_pdb_multiple.str              *
+************************************************************
+* Generate bare protein (no ligand, cofactor, etc.) and save
+* pdb and psf
+*
+
+! Read in protein and ligand sequence and coordinates
+stream @strDIR/setup_protein.str
+
+open write unit 1 form name @psfDIR/@proteinname_withoutligand.psf
+write psf card unit 1
+close unit 1
+
+open write unit 1 form name @pdbDIR/@proteinname_withoutligand.pdb
+write coor pdb unit 1
+close unit 1
+
+!***********************************************************
+!*           End read_write_pdb_multiple.str
+!***********************************************************
+
+return
+

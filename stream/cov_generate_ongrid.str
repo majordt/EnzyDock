@@ -1,0 +1,15 @@
+************************************************************
+* Call to patch covalent link between enzyme and ligand    *
+************************************************************
+*
+
+bomlev -1
+open unit 101 read form name @stpDIR/cov_patch_g.str
+if ?iostat .ne. -1 then
+   stream @stpDIR/cov_patch_g.str
+else
+   echo EnzyDock WARNING: COVALENT DOCKING REQUESTED, BUT NO PATCH FILE FOUND.
+   stop
+endif
+bomlev @bomblevel
+

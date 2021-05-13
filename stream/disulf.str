@@ -1,0 +1,18 @@
+************************************************************
+*                  Start disulf.str                        *
+************************************************************
+* A file to set up disulfide bridges
+* 
+
+set b 1
+
+label disu_loop
+
+  patch disu pep@dipe@@b1 @disu@@b1 pep@dipe@@b2 @disu@@b2
+
+  incr b
+
+if b .le. @disulf goto disu_loop
+
+return
+

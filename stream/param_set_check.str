@@ -1,0 +1,287 @@
+************************************************************
+* Check and initialize undefined parameters and check      *
+* consistencies                                            *
+************************************************************
+*
+
+! Critical variables that cannot be defaulted
+if @?proteinname        .eq. 0 stop
+if @?proteinunit        .eq. 0 stop
+if @?numligands         .eq. 0 stop
+!if @?bsitex            .eq. 0 stop
+!if @?bsitey            .eq. 0 stop
+!if @?bsitez            .eq. 0 stop
+
+if proteinunit .lt. 1 stop
+
+! Additional variables
+if @?bomblevel          .eq. 0 set bomblevel 0
+if @?numcofactor        .eq. 0 set numcofactor 0
+if @?{patch_cofact}     .eq. 0 set patch_cofact false
+if @?{patch_lig_cofact} .eq. 0 set patch_lig_cofact false
+if @?flexibledocking    .eq. 0 set flexibledocking false
+if @?flexibleback       .eq. 0 set flexibleback false
+if @?disulf             .eq. 0 set disulf 0
+if @?covalent           .eq. 0 set covalent false
+if @?maxligmctemp       .eq. 0 set maxligmctemp 800.0
+if @?minligmctemp       .eq. 0 set minligmctemp 300.0
+if @?ligmcsteps         .eq. 0 set mcligmcsteps 1000
+if @?ligmcflag          .eq. 0 set ligmcflag true
+if @?mcflag             .eq. 0 set mcflag true
+if @?samd               .eq. 0 set samd true
+if @?timestep           .eq. 0 set timestep 0.001
+if @?numheatsteps       .eq. 0 set numheatsteps 5000
+if @?heattemp           .eq. 0 set heattemp 800.0
+if @?numcoolsteps       .eq. 0 set numcoolsteps 10000
+if @?cooltemp           .eq. 0 set cooltemp 100.0
+if @?mcsteps            .eq. 0 set mcsteps 10000
+if @?mcsa               .eq. 0 set mcsa false
+if @?mctemp             .eq. 0 set mctemp 300.0
+if @?mchtemp            .eq. 0 set mchtemp @mctemp
+if @?mcltemp            .eq. 0 set mcltemp @mctemp
+if @?mcycles            .eq. 0 set mcycles 2
+if @?mctorsgen          .eq. 0 set mctorsgen true
+if @?mcmin              .eq. 0 set mcmin false
+if @?mstep              .eq. 0 set mstep 500
+if @?mmstep             .eq. 0 set mmstep 500
+if @?qmstep             .eq. 0 set qmstep 50
+if @?mprint             .eq. 0 calc mprint @mstep/10
+if @?mmprint            .eq. 0 calc mmprint @mmstep/10
+if @?qmprint            .eq. 0 calc qmprint @qmstep/10
+if @?minradius          .eq. 0 set 0.0
+if @?maxit              .eq. 0 set maxit 10
+if @?maxmit             .eq. 0 set maxmit 10
+if @?maxrotangle        .eq. 0 set maxrotangle 360.0
+if @?runid              .eq. 0 set runid @proteinname
+if @?harmforce          .eq. 0 set harmforce 0.00
+if @?qmmm               .eq. 0 set harmforce false
+if @?deflink            .eq. 0 set deflink false
+! ADD check for qm charge
+if @?ctnb               .eq. 0 set ctnb 13.0
+if @?ctfnb              .eq. 0 set ctfnb 12.0
+if @?ctonb              .eq. 0 set ctonb 10.0
+if @?eps                .eq. 0 set eps 3.0
+if @?grideps            .eq. 0 set grideps 3.0
+if @?dielec             .eq. 0 set dielec rdie
+if @?griddielec         .eq. 0 set griddielec rdie
+if @?mmeps              .eq. 0 set mmeps 1.0
+if @?mmdielec           .eq. 0 set mmdielec cdie
+if @?qmeps              .eq. 0 set qmeps 1.0
+if @?qmdielec           .eq. 0 set qmdielec cdie
+if @?isolv              .eq. 0 set isolv false
+if @?gbsw               .eq. 0 set gbsw false
+if @?pbeq               .eq. 0 set pbeq false
+if @?water              .eq. 0 set water false
+if @?usegrid            .eq. 0 set usegrid true
+if @?gridone            .eq. 0 set gridone false
+if @?ligand             .eq. 0 set ligand 1
+if @?gridformat         .eq. 0 set gridformat form
+if @?deltagrid          .eq. 0 set deltagrid 0.5
+if @?gridon             .eq. 0 set gridon false
+if @?gridsize           .eq. 0 set gridsize 12.0
+if @?maxtrans           .eq. 0 set maxtrans 2.0
+if @?gridname           .eq. 0 then
+   set gridname @runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_grid
+endif
+if @?softon             .eq. 0 then
+   set softon soft emax 30.0 vdwe elee
+endif
+if @?softoff            .eq. 0 then
+   set softoff soft emax 0.0 mine 0.0 maxe 0.0 vdwe elee
+endif
+if @?gridsoft           .eq. 0 set gridsoft @softon
+if @?cluster            .eq. 0 set cluster true
+if @?clusterwidth       .eq. 0 set clusterwidth 1.0
+if @?softlink           .eq. 0 set softlink false    ! This option allows softlink to results, to avoid too long file paths
+
+! Verify that protein names are set correctly. If not set, then set to default.
+set i 1
+label check_proteinname
+   if @?{proteinname@@i} .eq. 0 then
+      set proteinname@@i @proteinname_@i ! Name of protein pdb file
+   endif
+incr i
+if i .le. @proteinunit goto check_proteinname
+
+! Check that protein read offset is set
+set i 1
+label check_offset
+   if @?{offset@@i} .eq. 0 then
+      set offset@@i 0
+      echo EnzyDock WARNING: offset not defined, set to 0
+   endif
+   incr i   
+if i .le. @proteinunit goto check_offset
+
+! Check that disulfide definition makes sense
+if disulf .gt. 0 then
+   set i 1
+   label check_disulf
+      if @?{disu@@{i}1} .eq. 0 goto disulf_error
+      if @?{dipe@@{i}1} .eq. 0 goto disulf_error
+      if @?{disu@@{i}2} .eq. 0 goto disulf_error
+      if @?{dipe@@{i}2} .eq. 0 goto disulf_error
+      incr i
+   if i .le. @disulf goto check_disulf
+   goto no_disulf_error
+   label disulf_error
+      echo EnzyDock WARNING: disulfides not correctly defined
+      stop
+   label no_disulf_error
+endif
+
+! Grid definitions
+if gridformat .eq. form then
+   set gform form
+   set gfext ascii
+else
+   set gform unform
+   set gfext bin
+endif
+
+! Check cofactor definitions
+if numcofactor .gt. 0 then
+   set i 1
+   label check_cofact
+      if @?{cofact@@i} .eq. 0 goto cofact_error
+      if @?{cofactname@@i} .eq. 0 then
+         set cofactname@@i @proteinname_@cofact@@i
+      endif
+   incr i
+   if i .le. @numcofactor goto check_cofact
+   if @?kcf .eq. 0 set kcf 25.0
+   goto no_cofact_error
+   label cofact_error
+      echo EnzyDock WARNING: cofactor name not correctly defined
+      stop
+   label no_cofact_error
+
+endif
+
+! Check covalent docking definitions
+if covalent .eq. true then
+   set numligands 1
+   if @?covresn .eq. 0 goto cov_error
+   if @?covresi .eq. 0 goto cov_error
+   if @?covseg  .eq. 0 goto cov_error
+   if @?liglink1 .eq. 0 goto cov_error
+   if @?liglink2 .eq. 0 goto cov_error
+   if ?qchem .eq. 1 then
+      set minradius 0.0   ! Causes problems with minimization, should be fixed.
+   endif
+   if @covresn .eq. cys then
+     set protlink0 CB
+     set protlink1 SG
+     set protlink2 HG1
+     set rcx 1.84
+     set qmlink S
+     goto no_cov_error
+   endif
+   if @covresn .eq. ser then
+     set protlink0 CB
+     set protlink1 OG
+     set protlink2 HG1
+     set rcx 1.43
+     set qmlink OH1
+     goto no_cov_error
+   endif
+   if @covresn .eq. tyr then
+     set protlink0 CZ
+     set protlink1 OH
+     set protlink2 HH
+     set rcx 1.43
+     set qmlink OH1
+     goto no_cov_error
+   endif
+   ! If covresn not defined as cys, ser, or tyr should give error
+   label cov_error
+      echo EnzyDock WARNING: error in covalent docking definition
+      stop
+   label no_cov_error
+   set readummy true   ! Read dummy atoms to place covalent ligand optimally only once
+endif
+
+! Check keyword consistencies
+if covalent .eq. true set flexibledocking true
+if flexibledocking .eq. false then 
+   if flexibleback .eq. true then
+      echo EnzyDock WARNING: flexible definitions are inconsistent
+      stop
+   endif
+endif
+
+if flexibledocking .eq. true then
+! Loop over all residues to make sure they are defined
+   set i 1
+   set k 0
+   label check_flex1
+      if @?{numflex@@i} .eq. 0 goto flex_error
+      if numflex@@i .gt. 0 then
+         set j 1
+         label check_flex2
+            ! Check that flexible residues are defined
+            if @?{flex@@i@@j} .eq. 0 goto flex_error
+            ! Check that flexible residues are defined in increasing order
+            if j .gt. 1 then
+             calc l @j - 1
+             if flex@@i@@j .le. @{flex@@i@@l} then
+                goto flex_error
+             endif
+            endif
+            incr j
+         if j .le. @numflex@@i goto check_flex2
+         incr k
+      endif
+      incr i
+   if i .le. @proteinunit goto check_flex1
+   if @?kbf .eq. 0 set kbf 25.0
+   if k .eq. 0 goto flex_error
+   goto no_flex_error
+   label flex_error
+      echo EnzyDock WARNING: flexible residues not defined correctly
+      stop
+   label no_flex_error
+endif
+
+! Implicit solvation tests (must choose either GBSW or PBEQ or both)
+if @isolv .eq. true then
+   if @gbsw .eq. false then
+      if @pbeq .eq. false then
+         echo EnzyDock WARNING: Choose either GBSW or PBEQ implicit solvation method
+         stop
+      endif
+   endif
+   if @gbsw .eq. true then
+      if @pbeq .eq. true then
+         echo EnzyDock WARNING: Choose either GBSW or PBEQ implicit solvation method
+         echo EnzyDock WARNING: Using GBSW
+         set pbeq false
+      endif
+   endif
+endif
+
+! MCSA tests
+if @mcsa .eq. true then
+   set mcmin false
+   if @mcycles .lt. 2 then
+      set mcycles 2
+   endif
+   if @mchtemp .lt. @mcltemp then
+      echo EnzyDock WARNING: Protein-ligand MC Annealing temperatures illogical
+      stop
+   endif
+endif
+
+! Various tests
+if @gridon .eq. true grid off
+if @heattemp .lt. @cooltemp then
+   echo EnzyDock WARNING: Ligand MC annealing temperatures illogical
+   stop
+endif
+if @maxligmctemp .lt. @minligmctemp then
+   echo EnzyDock WARNING: Ligand MC annealing temperatures illogical
+   stop
+endif
+
+return
+

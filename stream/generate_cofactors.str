@@ -1,0 +1,40 @@
+************************************************************
+*           Start generate_cofactors.str                   *
+************************************************************
+* Script file to read all non-protein and non-ligand pdb files
+*
+
+!define cofactors sele none end
+
+! If no cofactors, uncomment goto
+! goto skip_cofactors
+
+set c 1
+
+set NumObject ?nres
+
+label read_cofactors
+
+    open unit 1 form read name @pdbDIR/@cofactname@@c.pdb
+    read sequ pdb unit 1
+    generate COF@c first none last none setup
+    rewind unit 1
+    read coor pdb unit 1 offset @NumObject
+    close unit 1     
+
+    set NumObject ?nres
+
+    define cofactors sele cofactors .or. segi COF@c show end
+
+    incr c
+
+if c .le. @numcofactor goto read_cofactors
+
+!label skip_cofactors
+
+!***********************************************************
+!*           End generate_cofactors.str
+!***********************************************************
+
+return
+

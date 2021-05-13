@@ -1,0 +1,41 @@
+************************************************************
+* Perform MC translations and rotations                    *
+************************************************************
+*
+
+! Weights are chosen such that each degree of freedom has roughly equal
+! frequency of being chosen.
+! Rigid body translations of ligand
+move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label atrn sele segid ligand_@currligand end
+
+! Rigid body rotations of ligand
+move add mvtp rrot byresidue weight 1.00 dmax 30.0 label arot sele segid ligand_@currligand end
+
+! Torsional rotations in ligand. Lines below first must be modified manually.
+!move add mvtp tors weight 1.00 dmax 180.0 label tr1  fewer 0 sele atom FLX1 1 @protlink1 show end sele atom ligand_@currligand 1 @atomlink1 show end
+!move add mvtp tors weight 1.00 dmax 180.0 label tr16 fewer 0 sele atom ligand_@currligand 1 O31 show end sele atom ligand_@currligand 1 C32 show end
+
+! Link moves so they are done together.
+move link lab1 atrn lab2 arot
+
+!open write unformatt unit 11 name @scrDIR/@MOD.@Tf.mc.@j.@s.dcd      ! write trajectory file
+
+stream @strDIR/seed.str
+
+set idomcfrq 5
+if @idomcfrq .gt. @mcsteps then 
+   set idomcfrq 1
+endif
+
+! Do MC simulation
+mc temperature @mctemp nsteps @mcsteps -
+   iseed @seed1 @seed2 @seed3 @seed4 -
+   idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+   iuncrd -11 nsavc 0
+
+move link lab1 atrn
+move dele label atrn
+move dele label arot
+
+return
+

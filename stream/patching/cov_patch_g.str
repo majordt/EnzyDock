@@ -1,0 +1,51 @@
+* Patch covalent link between enzyme and ligand
+*
+
+if @covresn .eq. cys then
+   patch COVC FLX@{covseg} 1 ligand_@currligand 1
+   goto patch_on
+endif
+if @covresn .eq. ser then
+   patch COVS FLX@{covseg} 1 ligand_@currligand 1
+   goto patch_on
+endif
+if @covresn .eq. tyr then
+   patch COVT FLX@{covseg} 1 ligand_@currligand 1
+   goto patch_on
+endif
+echo EnzyDock ERROR: No covalent residue chosen. 
+echo EnzyDock: Check covalent residue definitions...
+stop
+
+label patch_on
+
+! Some patches need autogenerate, could cause problems with water
+autogenerate angles dihedrals
+
+! Build missing coordinates
+hbuild
+
+! Balance charge after patching. Assumes 2 atoms were deleted. Dipole command sets charge.
+coor dipole sele segi ligand_@currligand .or. segi FLX@{covseg} end 
+calc charge -?charge / 2
+calc icharge int( @charge )
+if @icharge .lt. 1.0 if @icharge .gt. 0.0 then
+   calc icharge @icharge + 1
+endif
+if @icharge .lt. 0.0 if @icharge .gt. -1.0 then
+   calc icharge @icharge - 1
+endif
+if @icharge .ne. 0.0 then
+   calc charge @charge % @icharge
+endif
+scalar 1 set 0.0
+scalar 1 set 1.0 sele atom ligand_@currligand 1 @liglink1 .or. atom FLX@{covseg} 1 @protlink1 show end
+scalar 1 mult @charge
+!scalar 1 show
+!scalar charge show
+scalar charge sum 1
+!scalar 1 show
+!scalar charge show
+coor dipole sele all end
+
+return

@@ -1,0 +1,13 @@
+************************************************************
+* Patch residues that change during reaction (if any)      *
+************************************************************
+*
+
+! Patch residues that change during reaction
+bomlev -1
+open unit 102 read form name @stpDIR/patch_g_@currligand.str
+if ?iostat .ne. -1 then
+   stream @stpDIR/patch_g_@currligand.str
+endif
+bomlev @bomblevel
+

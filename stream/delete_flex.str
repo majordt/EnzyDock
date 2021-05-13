@@ -1,0 +1,11 @@
+************************************************************
+*                  Start delete_flex.str                   *
+************************************************************
+* A file to set up list of flexible binding site resiudes
+* Do not make Pro or Gly flexible!
+* 
+
+dele atom sele flex end ! Delete flexible atoms as these are not part of making grid (will be treated explicitly)
+
+return
+

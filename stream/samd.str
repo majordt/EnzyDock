@@ -1,0 +1,64 @@
+************************************************************
+* Perform Simulated Annealing Molecular Dynamics           *
+************************************************************
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SAMD
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Performs heating and cooling dynamics on the ligand while
+! within the grid
+
+! If water is used, then don't shake because water H-H bond removed
+if water .ne. true then
+   shake bonh para tol 1.0E-8
+endif
+
+! Heat up
+!    set teminc 10.0
+!    calc htfreq = int(@numheatsteps*@teminc/(@heattemp - @cooltemp))
+set htfreq 50
+calc teminc @htfreq*(@heattemp - @cooltemp)/@numheatsteps
+calc frq @numheatsteps/10
+calc frq2 10*@frq
+
+! Possible to use restart files, but causes instability
+!open write unit 21  card name @scrDIR/heating.rst
+
+stream @strDIR/seed.str   ! Generate new seeds
+
+dynamics leap start timestep @timestep -
+    nstep @numheatsteps nprint @frq2 iprfrq @frq -
+    firstt @cooltemp finalt @heattemp teminc @teminc ihtfrq @htfreq ieqfrq @htfreq -
+    ichecw 1 twindl -10.0 twindh 10.0 -
+    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 - 
+    iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+    inbfrq 0 ilbfrq 0  - ! Updates not needed
+    echeck 5000000.0
+
+! Cool down
+! set teminc -10.0
+! calc clfreq = int(@numcoolsteps*@teminc/(@cooltemp - @heattemp))
+set clfreq 50
+calc teminc @clfreq*(@cooltemp - @heattemp)/@numcoolsteps
+calc frq @numcoolsteps/10
+calc frq2 10*@frq
+
+!open read  unit 22  card name @scrDIR/heating.rst
+
+stream @strDIR/seed.str   ! Generate new seeds
+
+dynamics leap start timestep @timestep -
+    nstep @numcoolsteps nprint @frq2 iprfrq @frq -
+    firstt @heattemp finalt @cooltemp teminc @teminc ihtfrq @clfreq ieqfrq @clfreq -
+    ichecw 1 twindl -10.0 twindh 10.0 -
+    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+    iunwri -1 iuncrd -1 iunrea -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+    inbfrq 0 ilbfrq 0  - ! Updates not needed
+    echeck 5000000.0
+
+skipe none
+shake off
+
+return
+

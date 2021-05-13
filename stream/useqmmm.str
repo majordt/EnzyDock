@@ -1,0 +1,139 @@
+************************************************************
+*                  Start useqmmm.str                       *
+************************************************************
+*
+
+! Grid is cleared in enzydock.inp
+!grid off
+
+!quantum group select QMSX end -
+!    AM1 charge @charge - 
+!    scfc 0.000001 1elec density vectors     
+!if covalent .eq. true
+!   mndo97 remove am1 charge @qmcharge@@currligand nstep @qmstep group select QMS end -
+!          glnk select atom PEP@{covseg} @{covresi} @protlink1 show end
+!endif
+
+if covalent .eq. true then
+
+ if deflink .eq. false then
+
+   ! Get atom type of ligand covalent attach-point
+   !coor stat sele atom ligand_@currligand 1 @liglink1 show end
+   !set qmligl ?selchem
+
+read rtf card append
+* RTF for link atom
+*
+ 27 1
+
+MASS  -1  QQH  1.00800 H ! (link atom)
+
+END
+
+read param card flex append
+* Parameters for link atom
+*
+
+ATOMS
+MASS  -1  QQH  1.00800  ! (link atom)
+
+BONDS
+QQH  @qmlink      0.0        1.0    ! Link atom
+QQH  @qmligl      0.0        1.0    ! Link atom
+
+ANGLES
+QQH  @qmligl  @qmlink      200.0     0.0    ! Link atom
+QQH  @qmlink  @qmligl      200.0     0.0    ! Link atom
+
+DIHEDRALS
+
+NONBONDED
+QQH    0.000000   0.000000   0.000000 ! Link atom
+
+END
+
+   bomlev -1
+   addl QQH ligand_@currligand 1 @liglink1 PEP@{covseg} @{covresi} @protlink1
+   bomlev @bomblevel
+
+! With Q-Chem link atom must not be included in QM region definition
+!   define QMS sele QMS .or. atom ligand_@currligand 1 QQH* show end
+
+   set deflink .eq. true
+
+ endif
+endif
+
+!set Ctnb  13.0
+!set Ctfnb 12.0
+!set Ctonb 10.0
+
+nbonds -
+    nbxmod 5 e14fac 1.0 wmin 1.0 -
+    @qmdielec eps @qmeps -
+    vdw vshift -
+    cutnb @Ctnb  ctofnb @Ctfnb  ctonnb @Ctonb -
+    inbf -1
+
+set qmdefined false
+if ?mndo97 .eq. 1 then
+   mndo97 remove am1 charge @qmcharge@@currligand nstep 500 group select QMS show end
+   set qmdefined true
+endif
+if ?squantm .eq. 1 then
+   quantum remove am1 charge @qmcharge@@currligand group select QMS show end
+   set qmdefined true
+endif
+if ?quantum .eq. 1 then
+   quantum remove am1 charge @qmcharge@@currligand group select QMS show end
+   set qmdefined true
+endif
+if ?qchem .eq. 1 then
+
+   ! Account for dielectric constant (note that for flexible docking this will also influence
+   ! protein-protein interactions unless using special code that separates between MM-MM and 
+   ! QM-MM interactions)
+!   if @?qmeps .ne. 0 then
+!      if @minradius .gt. 0.0 then   ! can't use 'scalar charge divi ..." if minimizing MM region
+!         set qmeps 1.0
+!      endif
+!      scalar charge divi @qmeps sele all end
+!   endif
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! Read QM definition
+   !---------- Needed to define Q-Chem env. vars. ----------
+   envi qchemcnt  "../stream/qmmm/qchem1.inp"
+   envi qcheminp  "../results/q1.inp"
+   envi qchemexe  "qchem"
+   envi qchemout  "../results/qchem1.out"
+   !--------------------------------------------------------
+
+   ! Add 'noguess' and also start using 'save' (seperate 'energy' calc) & 'restart'
+   qchem omp remove exgr div qclj save nres 3 parallel @npqchem sele QMS end
+
+   energy
+
+   !---------- Needed to define Q-Chem env. vars. ----------
+   envi qchemcnt  "../stream/qmmm/qchem2.inp"
+   envi qcheminp  "../results/q2.inp"
+   envi qchemout  "../results/qchem2.out"
+   !--------------------------------------------------------
+
+   qchem omp remove exgr div qclj restart noguess nres 3 parallel @npqchem sele QMS end
+
+   energy
+
+endif
+if @qmdefined .eq. false then
+   echo EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+endif
+!grid on
+
+!**********************************************************
+!*                 End useqmmm.str                        *
+!**********************************************************
+
+return
+

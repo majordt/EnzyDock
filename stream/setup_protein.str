@@ -1,0 +1,31 @@
+************************************************************
+*              Start setup_protein.str                     *
+************************************************************
+* Set up bare protein (no ligand, cofactor, etc.)
+*
+
+stream @strDIR/generate_protein.str
+
+bomlev -1
+if @disulf .ge. 1 then 
+   bomlev -1
+   open unit 101 read form name @strDIR/disulf.str
+   if ?iostat .ne. -1 then
+      stream @strDIR/disulf.str
+   else
+      echo EnzyDock WARNING: DISULFIDE BRIDGE REQUESTED, BUT NO PATCH FILE FOUND.
+      stop
+   endif
+   bomlev @bomblevel
+endif
+bomlev @bomblevel
+
+! "_" is dummy variable
+define _ sele .not. init show end
+
+!***********************************************************
+!*                 End setup_protein.str
+!***********************************************************
+
+return
+

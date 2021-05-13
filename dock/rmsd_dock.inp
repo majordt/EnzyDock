@@ -1,0 +1,160 @@
+************************************************************
+* Compute the RMSD of a single coordinate set w.r.t the    *
+* reference set                                            *
+************************************************************
+*
+
+set currligand 1
+set refs  1
+
+if @numligands .gt. 1 then
+   open write unit 4 form name @resDIR/lig_consensus_rmsd_@runid.dat
+   write title unit 4
+**
+*  Consensus RMSD for ligands
+* ===========================
+* 
+endif
+
+label read_ligand
+
+   open write unit 3 form name @resDIR/lig_@currligand_rmsd_@runid.dat
+   write title unit 3
+**
+*  RMSD for ligand number @currligand
+*  All-atom (AA) rmsd    Heavy-atom (HA) rmsd     Ligand
+* =======================================================
+* 
+
+   bomlev -2
+
+!read topology
+!open read card unit 10 name @topDIR/top_all36_cgenff.rtf
+!read rtf card unit 10 
+!close unit 10
+
+!read parameters
+!open read card unit 10 name @topDIR/par_all36_cgenff.prm
+!read param card unit 10 flex
+!close unit 10
+
+   ! Reads in a new ligand
+   bomlev -1
+   open unit 101 read form name @topDIR/ligand_@currligand.str
+   if ?iostat .ne. -1 then
+      stream @topDIR/ligand_@currligand.str
+   else
+     ! This is a critical warning
+     echo EnzyDock WARNING: Ligand rtf/prm file not found.
+     stop
+   endif
+   bomlev @bomblevel
+
+   ! "_" is dummy variable
+   define _ sele .not. init show end
+
+   bomlev @bomblevel 
+
+   ! Read PSF and initial/reference coordinates
+   open read card unit 1 name @psfDIR/@currligand_@runid_0.psf
+   read psf card unit 1
+   close unit 1
+
+   if @cluster .eq. true then
+
+      ! Use input structure as reference
+      open read unit 1 form name @pdbDIR/ligand_@currligand.pdb
+      read coor pdb unit 1
+      close unit 1
+
+   else
+
+      ! Use lowest energy pose as reference structure
+      open read unit 1 form name @resDIR/lig_mindock_@currligand.crd
+      read coor card unit 1 
+      close unit 1
+
+   endif
+
+   !open read card unit 1 name @resDIR/lig_@currligand_@runid_@iter_@refs.crd
+   !!open read card unit 1 name @resDIR/mindock_@currligand.crd
+   !read coor card unit 1 !sele segid LIGAND_@currligand end
+   !close unit 1
+
+   ! By default, coordinates are read in to the MAIN set. The following
+   ! command saves a copy of the MAIN set in the COMParison set
+   ! Saving minimum energy pose.
+   coor copy comp
+   ! Keep in 2nd comparison set for comparison of consensus between lowest 
+   ! energy poses
+   !if @currligand .eq. 1 then coor copy comp second
+
+   set iter = 1
+
+   label next_struct
+
+      set microiter = 1
+
+      label next_rot
+
+         ! Read another set of coordinates (e.g., the last frame of NPT production)
+         open read card unit 1 name @resDIR/lig_@currligand_@runid_@iter_@microiter.crd
+         read coor card unit 1
+         close unit 1
+
+         ! Compute all atom RMSD values
+         coor rms select segid LIGAND_@currligand show end
+         set allrms = ?rms
+
+         ! Compute the heavy atom RMSD values
+         coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
+         set hvyrms = ?rms
+
+         write title unit 3 
+* AA rmsd = @allrms HA rmsd = @hvyrms @runid_@iter_@microiter
+*
+
+         incr microiter
+
+      if @microiter .le. @maxmit goto next_rot
+
+      incr iter
+
+   if @iter .le. @maxit goto next_struct
+
+   if @currligand .le. @numligands if @currligand .gt. 1 then
+
+      bomlev -1   ! Allow different residue names
+
+      ! Use lowest energy pose as reference structure
+      ! It's crucial that all atoms used for comparison have 
+      ! the same names.
+      open read unit 1 form name @resDIR/lig_mindock_@refs.crd
+      read coor card unit 1 comp
+      close unit 1
+
+      ! Use lowest energy pose as reference structure
+      open read unit 1 form name @resDIR/lig_mindock_@currligand.crd
+      read coor card unit 1
+      close unit 1
+
+      ! Compute the heavy atom RMSD values
+      coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
+      set hvyrms = ?rms
+
+      write title unit 4 
+* heavy atom rmsd = @hvyrms  lig_mindock_@currligand.crd
+*
+
+      bomlev @bomblevel
+
+   endif
+
+   dele atom
+
+   incr currligand
+
+if @currligand .le. @numligands goto read_ligand
+ 
+return
+

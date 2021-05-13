@@ -1,0 +1,440 @@
+************************************************************
+*                  ENZYDOCK MAIN                           *
+************************************************************
+* This script controls the EnzyDock program
+* Main docking work flow
+* Authors:
+* Mor Shimshi
+* Renana Schwartz
+* Susanta Das
+* Keren Raz
+* Neta Nitoker
+* Tamar Ansbacher
+* Anil Mhashal
+* Dan T Major
+* Initial version (EnzyDock v0): 2016-2018
+* Mature version (EnzyDock v0.9): July-August 2018
+* Advanced version (EnzyDock v1.0): May 2019
+* 
+
+! EnzyDock: Protein–Ligand Docking of Multiple Reactive States along a Reaction Coordinate in Enzymes
+! 
+! Copyright © 2019 Dan T. Major
+! 
+! Publications using EnzyDock should cite:
+!
+! Das, S.; Shimshi, M.; Raz, K.; Nitoker, N.; Mhashal, A.; Ansbacher, T.; Major, D. T. 
+! EnzyDock: Protein-Ligand Docking of Multiple Reactive States along a Reaction Coordinate in Enzymes. 
+! J. Chem. Theory Comput. 2019, 15, 5116-5134.
+!
+! This program is free software and is intended for academic use only; 
+! you can redistribute it and/or modify it under the terms of the
+! GNU General Public License as published by the Free Software Foundation;
+! either version 2 of the License, or any later version.
+! 
+! This program is distributed in the hope that it will be useful, 
+! but WITHOUT ANY WARRANTY; without even the implied warranty of 
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+! See the GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU General Public License along with 
+! this program; if not, write to the Free Software Foundation, Inc., 51 Franklin 
+! Street, Fifth Floor, Boston, MA  02110-1301, USA. Also add information on 
+! how to contact you by electronic and paper mail.
+!
+! EnzyDock requires the CHARMM program for all functionalities (see: https://academiccharmm.org/)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+banner
+bomlev 0
+wrnlev 10
+prnlev 5
+fast   on
+lower
+long
+
+! Write-protect all EnzyDock files
+system "../scripts/files_lock.sh"
+
+! Gets job control parameters
+stream ../stream/param.str
+
+! Gets the user bomblevel
+bomlev @bomblevel
+
+set currligand 1
+
+! Read topology and parameter files
+stream @strDIR/top_prm_all.str
+
+goto define_center
+label after_define_center
+
+! Reads in protein pdb files, sets up disulfide bridges and 
+! writes protein and psf files
+stream @strDIR/read_write_protein.str
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  SETUP END, START GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Generates the grid using generate_grid.str if the grid has not
+! been made. If flexible, delete flexible residues so not
+! on grid.
+
+if @flexibledocking .eq. true then
+    stream @strDIR/define_flex_offgrid.str
+    if @usegrid .eq. true then
+       stream @strDIR/write_flex.str
+       stream @strDIR/delete_flex.str
+    endif
+    if @flexibleback .eq. true then
+       set kbf_flag false
+    endif
+endif
+
+if @usegrid .eq. true then 
+   ! Calculate grid boundaries
+   goto grid_boundaries
+   label after_grid_boundaries
+   ! Check if flexible residue(s) are within grid boundaries
+   if @flexibledocking .eq. true then
+      stream @strDIR/read_flex.str
+      stream @strDIR/define_flex_ongrid.str
+      goto check_flex_on_grid
+      label after_check_flex_on_grid
+      stream @strDIR/delete_flex.str
+   endif
+   ! Check if cofactor(s) are within grid boundaries 
+   define cofactors sele none end
+   if @numcofactor .gt. 0 then
+      stream @strDIR/generate_cofactors.str
+      goto check_cofac_on_grid
+      label after_check_cofac_on_grid       
+      delete atoms sele cofactors end
+   endif
+   ! Check if waters are within grid boundaries
+   stream @strDIR/read_water.str ! Will look for water pdb file and read if present
+   if water .eq. true then
+      goto check_water_on_grid
+      label after_check_water_on_grid
+      delete atoms sele segid CWAT end
+      set water false
+   endif
+   ! Generate grid
+   if @gridone .eq. false then
+        stream @strDIR/generate_grid.str
+    endif
+endif
+
+! Deletes the protein, clearing the space for different
+! computations
+! Now that grid is created, delete protein
+if ?nres .gt. 0 then dele atom
+
+! Reads in the restraints 
+!system "sh mkrestraints.sh"
+!stream @stdDIR/userrestraints.str
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END GRID, START MAIN LOOP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! This is the beginning of the reading in of the ligand for
+! the main dynamics and docking loop
+set gridon false
+
+set mcwriteflag true
+
+label read_newligand
+
+    ! Reads in a new ligand
+    bomlev -1
+    open unit 101 read form name @topDIR/ligand_@currligand.str
+    if ?iostat .ne. -1 then
+       stream @topDIR/ligand_@currligand.str
+    else
+      ! This is a critical warning
+      echo EnzyDock WARNING: Ligand rtf/prm file not found.
+      stop
+    endif
+    bomlev @bomblevel
+
+    set iter 1
+    set currdock 1
+    set mininte 0    
+ 
+    goto write_dat
+    label after_write_dat
+
+    label dock_iter
+
+       ! DTM: Check delete command
+       if ?nres .gt. 0 then dele atom
+
+       ! Gets a random ligand conformer using HTMC and random rotations
+       ! mcwriteflag controls whether to write MC torsional files
+       stream ligand_simulate.inp @mcwriteflag
+       set mcwriteflag false
+
+       ! Docks the random ligand structure using MC and SAMD
+       stream dock_ligand.inp
+    
+       incr iter
+
+    if @iter .le. @maxit goto dock_iter 
+
+    ! Call clustering program
+    ! The file name parts her (0-3) must not be changed, they correspond to the names
+    ! used in dock_ligand.inp
+    if @cluster .eq. true then
+       set 0 @currligand
+       set 1 @runid
+       set 2 @maxit
+       set 3 @maxmit
+       set 4 @clusterwidth
+       set 5 @proteinunit
+       ! The permutation version of cluster_ligands doesn't account for ligands covalently linked to 
+       ! cofactor
+       if @{patch_lig_cofact} .eq. true then
+          system "../scripts/cluster_ligands.py @0 @1 @2 @3 @4 @5"
+       else
+          system "../scripts/cluster_ligands_perm.py @0 @1 @2 @3 @4 @5"
+       endif
+    endif
+
+    ! DTM: Check delete command
+    if ?nres .gt. 0 then dele atom
+    ic purge 
+    incr currligand
+    
+    set mcwriteflag true
+
+if @currligand .le. @numligands goto read_newligand
+
+! Do final minimization of ligand in fixed protein without
+! consensus restraints
+!set usegrid false ! Set grid flag. Note that grid should already be off.
+
+! Clear up all memory and heap used by grid. From here on: all-atom only.
+grid clear
+
+if patch_cofact .eq. true set flexibledocking false   ! Switch flexible MM refinement off
+
+stream rmsd_dock.inp
+
+if @cluster .eq. true then
+
+   set currligand 1
+
+   ! Moved inside *_cluster.inp files
+   ! Read in number of clusters written by clustering program
+   !stream nclusters.str
+
+   !goto write_mm_dat
+   !label after_write_mm_dat
+
+   stream mm_cluster.inp
+
+   set currligand 1
+
+   if isolv .eq. true then
+      if gbsw .eq. true then
+         !goto write_gbsw_dat
+         !label after_write_gbsw_dat
+         stream gbsw_cluster.inp
+         set currligand 1
+      endif
+      if pbeq .eq. true then
+         !goto write_pbeq_dat
+         !label after_write_pbeq_dat
+         stream pbeq_cluster.inp
+         set currligand 1
+      endif
+   endif
+
+   ! QM/MM for lowest energy ligands
+   if @qmmm .eq. true then
+      !goto write_qmmm_dat
+      !label after_write_qmmm_dat
+      ! Do a QM/MM minimization without consensus restraints
+      open unit 30 read form name qmmm_cluster.inp
+      stream unit 30 !qmmm_cluster.inp
+   endif
+
+else
+
+   stream mm.inp
+
+   ! QM/MM for lowest energy ligands
+   if @qmmm .eq. true then
+   ! Do a QM/MM minimization without consensus restraints
+      open unit 30 read form name qmmm.inp
+      stream unit 30 !stream qmmm.inp
+   endif
+
+endif
+
+!if @covalent .ne. true then stream rmsd_dock.inp   ! Only do for consensus docking
+!stream rmsd_dock.inp
+
+stream @strDIR/softlink.str 0
+
+stop
+
+!**********************************************************
+!                  END MAIN ENZYDOCK LOOP
+!**********************************************************
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START DEFINE_CENTER
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label define_center
+
+   ! Check if center of active site is set. If not, default
+   ! is to take center of current ligand geometry
+   set count 0
+   if @?bsitex .eq. 0 incr count
+   if @?bsitey .eq. 0 incr count
+   if @?bsitez .eq. 0 incr count
+
+   if @count .eq. 0 then
+      set xcen = @bsitex
+      set ycen = @bsitey
+      set zcen = @bsitez
+   else
+      ! Reads in ligand
+      bomlev -1
+      open unit 101 read form name @topDIR/ligand_@currligand.str
+      if ?iostat .ne. -1 then
+         stream @topDIR/ligand_@currligand.str
+      else
+        ! This is a critical warning
+        echo EnzyDock WARNING: Ligand rtf/prm file not found.
+        stop
+      endif
+      stream @strDIR/read_ligand.str false
+      bomlev @bomblevel
+      coor stat select segid ligand_@currligand end
+      set xcen = ?xave
+      set ycen = ?yave
+      set zcen = ?zave
+      set bsitex = @xcen
+      set bsitey = @ycen
+      set bsitez = @zcen
+      dele atom
+   endif
+
+goto after_define_center
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START GRID_BOUNDARIES
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label grid_boundaries
+
+   ! Get extent of grid
+   calc gxmin = @bsitex - @gridsize
+   calc gymin = @bsitey - @gridsize
+   calc gzmin = @bsitez - @gridsize
+   calc gxmax = @bsitex + @gridsize
+   calc gymax = @bsitey + @gridsize
+   calc gzmax = @bsitez + @gridsize
+
+goto after_grid_boundaries
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_FLEX_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_flex_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele flexx end
+
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: FLEXIBLE RESIDUE(S) OFF GRID. INCREASE gridsize AND RERUN.
+      stop
+   else
+      echo EnzyDock: Flexible residues(s) within grid. 
+   endif
+
+goto after_check_flex_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_COFAC_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_cofac_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele cofactors end
+
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: COFACTOR(S) OFF GRID. INCREASE gridsize AND RERUN.
+      stop
+   else
+      echo EnzyDock: Cofactor(s) within grid. 
+   endif
+
+goto after_check_cofac_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_WATER_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_water_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele segid CWAT end
+
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: WATER(S) OFF GRID. CHECK WATER POSITIONS.
+   !   stop
+   else
+      echo EnzyDock: Water(s) within grid.
+   endif
+
+goto after_check_water_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_dat
+
+    ! Starts writing the output summary file
+    open write unit 3 form name @resDIR/@currligand_summary_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  enert: total potential energy after minimization
+*  intere: interaction energy + restraint energy
+*  intere0: interaction energy
+*  ener0: initial potential energy (soft pot)
+*  iter: index for ligand structure
+*  microiter: index for rotations of ligand
+*  enert        intere      intere0      ener0       iter_microiter
+* ==============================================================
+* 
+
+goto after_write_dat
+

@@ -1,0 +1,21 @@
+REMARK  71.6821911 -19.3331662 -19.3331662 78.9009699 7KYU_HF3C0_1_1                  
+REMARK   DATE:     1/24/21     12:43:19      CREATED BY USER: majort                  
+ATOM      1  C2  LIG L   1       6.257  -2.246  21.190  1.00  0.00      LIGA
+ATOM      2  C4  LIG L   1       5.724  -0.100  20.237  1.00  0.00      LIGA
+ATOM      3  C5  LIG L   1       5.946  -0.607  18.952  1.00  0.00      LIGA
+ATOM      4  C6  LIG L   1       6.349  -1.924  18.789  1.00  0.00      LIGA
+ATOM      5  C8  LIG L   1       5.296   1.541  18.723  1.00  0.00      LIGA
+ATOM      6  C10 LIG L   1       6.859  -4.186  19.704  1.00  0.00      LIGA
+ATOM      7  C1  LIG L   1       6.478  -2.763  19.905  1.00  0.00      LIGA
+ATOM      8  C3  LIG L   1       5.897  -0.902  21.355  1.00  0.00      LIGA
+ATOM      9  C7  LIG L   1       5.682   0.441  18.014  1.00  0.00      LIGA
+ATOM     10  N9  LIG L   1       5.340   1.208  20.066  1.00  0.00      LIGA
+ATOM     11  O11 LIG L   1       6.489  -5.122  20.385  1.00  0.00      LIGA
+ATOM     12  H1  LIG L   1       6.367  -2.883  22.055  1.00  0.00      LIGA
+ATOM     13  H2  LIG L   1       6.549  -2.315  17.806  1.00  0.00      LIGA
+ATOM     14  H3  LIG L   1       5.026   2.528  18.364  1.00  0.00      LIGA
+ATOM     15  H5  LIG L   1       5.730  -0.503  22.345  1.00  0.00      LIGA
+ATOM     16  H6  LIG L   1       5.755   0.375  16.939  1.00  0.00      LIGA
+ATOM     17  H7  LIG L   1       5.141   1.845  20.824  1.00  0.00      LIGA
+TER      28      LIG      1
+END

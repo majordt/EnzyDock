@@ -1,0 +1,382 @@
+************************************************************
+*                  Start mm_cluster.inp                    *
+************************************************************
+* Docking the ligand into the protein, with mm (no grid)
+*
+
+set currligand 1
+
+! Read topology and parameter files
+!stream @strDIR/top_prm_all.str
+
+! Read protein
+!stream @strDIR/read_protein.str
+
+! Read cofactors
+!if @cofactor .eq. true then stream @strDIR/generate_cofactors.str
+
+!set currligand 1
+
+label mm_loop
+
+  ! Read in number of clusters written by clustering program
+  stream nclusters@currligand.str
+
+  goto write_mm_clust_dat
+  label after_write_mm_clust_dat
+
+  ! Reads in a new ligand
+!  bomlev -1   ! Where is level increased again? Check...
+  open unit 101 read form name @topDIR/ligand_@currligand.str
+  if ?iostat .ne. -1 then
+     stream @topDIR/ligand_@currligand.str
+  else
+    ! This is a critical warning
+    echo EnzyDock WARNING: Ligand rtf/prm file not found.
+    stop
+  endif
+  bomlev @bomblevel
+
+  set iter 1
+
+  label mm_cluster_loop
+
+    ! If no grid used just read complete system below
+    if @usegrid .eq. false goto mm_read_all
+
+    stream @strDIR/read_protein.str  ! Protein must be read in each time (patching)
+    bomlev -1
+    ! Patch catalytic residues (in full protein representation)
+    stream @strDIR/patch_offgrid.str
+
+    ! Read cofactors
+    define cofactors sele none end
+    if @numcofactor .gt. 0 then 
+       stream @strDIR/generate_cofactors.str
+       if patch_cofact .eq. true stream @strDIR/cofact_patch_offgrid.str ! Read cofactor patching
+    endif
+    set NumObject ?nres
+
+    ! Read minimum ligand structure
+    open unit 1 form read name @psfDIR/@currligand_@runid_0.psf
+    read psf card unit 1 append
+    close unit 1
+    
+    ! Open best pose from clusters
+    open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/min_clust@iter_@currligand_@runid.crd
+    read coor card unit 1 offset @NumObject
+    close unit 1
+
+    ! Since flexible residue was written in as resi 1,...,n, we need to copy 
+    ! coordinates from this resi into the actual sequence position in
+    ! the protein.
+    !define flex sele none end
+    if @flexibledocking .eq. true then
+
+       set b 1
+       label read_copy_flex_min
+
+        if @numflex@@b .lt. 1 goto skip_read_copy_flex_min
+
+          set NumObject ?nres
+
+          ! Read flexible part of protein
+          open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex@b_min_clust@iter_@currligand_@runid.pdb
+          read sequ pdb unit 1
+          generate FLX@b first none last none setup
+          rewind unit 1
+          ! Patch flexible catalytic residues in grid representation
+          stream @strDIR/patch_ongrid.str
+          read coor pdb unit 1 offset @NumObject
+          close unit 1
+
+          set c 1
+          label flex_copy_loop
+             print coor sele segi FLX@b .and. resi @c show end
+             print coor sele segi pep@b .and. (resi @flex@@b@@c) show end
+             coor duplicate sele segi FLX@b .and. resi @c show end sele segi pep@b .and. (resi @flex@@b@@c) show end
+             print coor sele segi pep@b .and. (resi @flex@@b@@c) show end
+
+             dele atoms sele segi FLX@b .and. resi @c show end
+             incr c
+          if c .le. @numflex@@b goto flex_copy_loop
+
+        label skip_read_copy_flex_min
+
+        incr b
+
+       if b .le. @proteinunit goto read_copy_flex_min
+
+       ! Covalent docking setup
+       if @covalent .eq. true then
+          stream @strDIR/cov_generate_offgrid.str
+       endif
+
+       set b 1
+       define flex sele none end  ! Define here after covalent patch which can change sumber of atoms
+       label define_flex_loop1
+
+         if @numflex@@b .lt. 1 goto skip_define_flex_loop1
+
+          set c 1
+          label define_flex_loop2
+             define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+             incr c
+          if c .le. @numflex@@b goto define_flex_loop2
+
+         label skip_define_flex_loop1
+
+         incr b
+
+       if b .le. @proteinunit goto define_flex_loop1
+
+    endif
+
+!    ! Backbone atoms are not flexible unless specifically defined as flexible
+!    define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+
+!    ! If backbone atoms are flexible
+!    if flexibleback .eq. true then
+!       stream @strDIR/back_flex.str
+!       define back sele back .and. .not. fback end
+!    endif
+
+!    ! Define flexible region
+!    define flexx sele flex .and. .not. back show end
+
+    goto skip_mm_read_all   ! If grid was used, skip the next few lines
+
+    ! If no grid used just read complete system
+    label mm_read_all
+
+       ! Read minimum ligand structure
+       open unit 1 form read name @psfDIR/mindock_@currligand.psf
+       read psf card unit 1
+       close unit 1
+
+       open read unit 1 form name @resDIR/mindock_@currligand.crd
+       read coor card unit 1
+       close unit 1
+
+    label skip_mm_read_all
+
+    set c 1
+    define cofactors sele none end
+    label read_qcofactors
+       define cofactors sele cofactors .or. segi COF@c show end
+       incr c
+    if c .le. @numcofactor goto read_qcofactors
+
+    ! Remove harmonic restraints for final MM minimization, but read in NOEs
+    define ligand sele segid ligand_@currligand show end
+    stream @strDIR/clear_restraints.str
+    bomlev -1
+    open unit 101 read form name @stdDIR/userrestraints.str
+    if ?iostat .ne. -1 then
+       stream @stdDIR/userrestraints.str
+    else
+       echo EnzyDock WARNING: userrestraints.str file missing!
+       echo EnzyDock WARNING: See documentation
+    endif
+    bomlev @bomblevel
+
+    ! Backbone atoms are not flexible unless specifically defined as flexible
+    if @flexibledocking .eq. true then
+       define back sele segi pep* .and. (type N .or. type C .or. type O .or. type CA -
+                     .or. type HN .or. type HA .or. type HA2) show end
+    endif
+
+ !   define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
+
+   !  If backbone atoms are flexible. Must be after clear_restraints.str since it includes 
+   !  backbone restraints
+ !   if flexibleback .eq. true then
+ !      stream @strDIR/back_flex.str
+ !      define back sele back .and. .not. fback end
+ !   endif
+
+   !  Define flexible region
+  !  define flexx sele flex .and. .not. back show end
+
+    if @flexibledocking .eq. true then
+       if @flexibleback .eq. true then 
+          define flexx sele flex show end
+       else
+          define flexx sele flex .and. .not. back show end
+       endif
+       cons fix sele .not. (ligand .or. cofactors .or. flexx) end
+    else
+       cons fix sele .not. (ligand .or. cofactors) end
+    endif
+    ! If minimization radius is set, do minimization of nearby residues as well
+    ! This definition overrides earlier fixes
+    if @minradius .gt. 0.0 then
+       define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
+       cons fix sele .not. flexradius end
+    endif
+!    noe 
+!       reset
+!    end
+
+    nbonds atom eps @mmeps @mmdielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+       vswitch switch @softoff
+
+    mini abnr nstep @mmstep nprint @mmprint
+
+    ! Here not calculated on grid, so this line is ok
+    !if @flexibleback .eq. true then stream @strDIR/back_clear_restraints.str   ! Remove restraints on backbone atoms
+    set etot ?ener
+
+    inte sele ligand end sele .not. ligand end
+
+    ! Interaction energy should also include bestfit and noe restraints
+    set intere0 ?ener 
+    energy
+    calc intere = @intere0 + ?harm + ?noe 
+
+    open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_mm_min_clust@iter_@currligand_@runid.crd
+    write coor card unit 1 sele ligand show end
+    *  etot: total energy
+    *  intere: interaction energy + restraint energy
+    *  intere0: interaction energy
+    *  clustiter: cluster number
+    *  currligand: @currligand
+    *  runid: @runid
+    *  etot   intere    intere0       clustiter
+    * ===========================================
+    * @etot @intere @intere0 kcal/mol  clust@iter
+    * 
+
+    open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_mm_min_clust@iter_@currligand_@runid.pdb
+    write coor pdb unit 1 sele ligand show end
+    *  etot: total energy
+    *  intere: interaction energy + restraint energy
+    *  intere0: interaction energy
+    *  clustiter: cluster number
+    *  currligand: @currligand
+    *  runid: @runid
+    *  etot   intere    intere0       clustiter
+    * ===========================================
+    * @etot @intere @intere0 kcal/mol  clust@iter
+    *
+    close unit 1
+
+    ! Unit 3 was opened in enzydock.inp
+    write title unit 3
+    * @etot @intere @intere0 clust@iter
+
+    open write unit 1 form name @psfDIR/all_mm_mindock_@currligand.psf
+    write psf card unit 1
+    close unit 1
+
+    open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
+    write coor card unit 1
+
+    open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.pdb
+    write coor pdb unit 1
+    close unit 1
+
+    if @flexibledocking .eq. true then
+
+       if @numcofactor .gt. 0 then
+          open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_mm_min_clust@iter_@currligand_@runid.crd
+          write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+
+          open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_mm_min_clust@iter_@currligand_@runid.pdb
+          write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+          close unit 1
+       endif
+
+       open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_mm_min_clust@iter_@currligand_@runid.crd
+       write coor card unit 1 sele ligand .or. flex show end
+       *  etot: total energy
+       *  intere: interaction energy + restraint energy
+       *  intere0: interaction energy
+       *  clustiter: cluster number
+       *  currligand: @currligand
+       *  runid: @runid
+       *  etot     intere    intere0       clustiter
+       * =============================================
+       * @etot @intere @intere0 kcal/mol  clust@iter
+       *
+
+       open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_mm_min_clust@iter_@currligand_@runid.pdb
+       write coor pdb unit 1 sele ligand .or. flex show end
+       *  etot: total energy
+       *  intere: interaction energy + restraint energy
+       *  intere0: interaction energy
+       *  clustiter: cluster number
+       *  currligand: @currligand
+       *  runid: @runid
+       *  etot     intere    intere0       clustiter
+       * =============================================
+       * @etot @intere @intere0 kcal/mol  clust@iter
+       *
+       close unit 1
+
+       open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_mm_min_clust@iter_@currligand_@runid.crd
+       write coor card unit 1 sele flex show end
+
+       open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_mm_min_clust@iter_@currligand_@runid.pdb
+       write coor pdb unit 1 sele flex show end
+       close unit 1
+    endif
+
+    if @numcofactor .gt. 0 then
+       open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_mm_min_clust@iter_@currligand_@runid.crd
+       write coor card unit 1 sele ligand .or. cofactors show end
+
+       open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_mm_min_clust@iter_@currligand_@runid.pdb
+       write coor pdb unit 1 sele ligand .or. cofactors show end
+       close unit 1
+    endif
+
+    !print coor
+
+    incr iter
+
+    dele atoms sele all end
+
+  if @iter .le. @ncluster goto mm_cluster_loop  
+
+  incr currligand
+
+!  bomlev -1 ! Needed for non-integer charge for covalent docking
+!  if @numcofactor .gt. 0 then
+!     dele atoms sele ligand .or. cofactors end
+!  else
+!     dele atoms sele ligand end
+!  endif
+!  bomlev @bomblevel
+
+! This delete must be here unless deleted above inside mm_cluster_loop
+!  dele atoms sele all end
+
+if @currligand .le. @numligands goto mm_loop
+
+!dele atoms sele all end
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_mm_clust_dat
+
+    ! Starts writing the output summary file
+    open write unit 3 form name @resDIR/@currligand_summary_mm_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  etot: total ligand energy
+*  intere: interaction energy + restraint energy
+*  intere0: interaction energy
+*  clustiter: cluster number
+*  currligand: @currligand
+*  runid: @runid
+*  etot     intere    intere0    clustmiter
+* ==========================================
+* 
+
+goto after_write_mm_clust_dat
+
