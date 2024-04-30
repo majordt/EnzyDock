@@ -8,19 +8,11 @@ noe
    reset
 end
 cons harm clear
+! RS: Omit
 ! Reapply restraints to cofactors
-if @numcofactor .gt. 0 then
-   cons harm force @kcf sele cofactors .and. .not. hydrogen @debugshow end
-endif
-if @tagwtin .eq. true then
-   cons harm force @kwat sele segid WTIN @debugshow end
-else
-   if @tagwout .eq. false then
-      if @tagcwat .eq. true then
-         cons harm force @kwat sele segid CWAT @debugshow end
-      endif
-   endif
-endif
+!if @numcofactor .gt. 0 then
+!   cons harm force @kcf sele cofactors .and. .not. hydrogen @debugshow end
+!endif
 !cons rmsd clear
 cons cldh
 !resd clear

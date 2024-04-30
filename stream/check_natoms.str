@@ -1,0 +1,61 @@
+************************************************************
+*                   check_natoms.str                       *
+************************************************************
+* Checks if number of atom changes between ligands
+* Such change cause tightly coupled QM/MM codes (non-Q-Chem) crash 
+* due to problems with the dimentions of allocated QM arrays.
+* 
+
+define ligand sele segid ligand_@currligand @debugshow end
+if @currligand .eq. 1 then
+   set nchange false
+   set pren ?nsel
+
+   goto natoms_patch
+   label after_natoms_patch
+else
+   if @nchange .eq. false then
+      if @pren .ne. ?nsel then
+         set nchange true
+      endif
+   endif
+endif
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Check if patches are needed:
+! change in protein,
+! patch between protein and cofactor,
+! patch between ligand and cofactor.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+label natoms_patch
+
+   ! If patching on protein
+   set l 1 ! lign 1
+   label ccountp_lig
+      ! loop over protein units for a specific ligand
+      set prot 1 ! p 1
+      label ccountp_prot
+         if @patchcountligp@@{l}@@{prot} .gt. 0 then
+            set nchange true
+         endif
+         incr prot
+      if @prot .le. @proteinunit goto ccountp_prot
+      incr l
+   if @l .le. @numligands goto ccountp_lig
+   
+   ! If patching between protein and cofactor
+   if @{patch_cofact} .eq. true then
+      set nchange true
+   endif
+   
+   ! If patching between ligand and cofactor
+   ! RS: wil handle
+   !if @{patch_lig_cofact} .eq. true then
+   !   set nchange true
+   !endif
+
+goto after_natoms_patch 
+
