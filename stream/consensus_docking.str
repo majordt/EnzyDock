@@ -5,6 +5,8 @@
 * program 
 *
 
+set numrefatom 0
+
 ! This variable is not in use. Can be used if consensus docking uses
 ! previous structure (and not first structure) as reference for 
 ! consensus restraints.
@@ -26,8 +28,10 @@ bomlev -1
 open read unit 1 form name @resDIR/lig_mindock_1.crd
 read coor card unit 1 comp
 
-print coor
-print coor comp
+if @debug .eq. true then
+   print coor
+   print coor comp
+endif
 
 bomlev -1
 open unit 101 read form name @stdDIR/consensus_def.str
@@ -36,9 +40,20 @@ if ?iostat .ne. -1 then
 else
    echo EnzyDock WARNING: consensus_def.str file missing!
    echo EnzyDock WARNING: See documentation
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: consensus_def.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+   close unit 33
    stop
 endif
 bomlev @bomblevel
+
+! If no reference atoms found, skip to end
+if numrefatom .lt. 1 goto skip_cons
 
 ! 'notrans' and 'norot' must be used unless entire ligand is used for fitting
 cons harm bestfit mass force @harmforce comp -
