@@ -1,0 +1,8 @@
+REMARK   Accelrys Discovery Studio PDB file
+REMARK   Created:  2018-09-30T14:27:24Z
+ATOM      1  MG  MG     1      -6.623   1.624   0.885  1.00 21.61      MION
+ATOM      2  MG  MG     2      -4.423   5.795  -0.083  1.00 16.60      MION
+ATOM      3  MG  MG     3      -5.181   0.730   3.503  1.00 19.59      MION
+TER       4      MG     3
+END
+

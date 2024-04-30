@@ -1,0 +1,57 @@
+MODEL        1
+ATOM      1  C1  LIG     1      44.744  45.821  47.893  1.00  0.00      LIGA C  
+ATOM      2  H11 LIG     1      45.543  46.496  47.522  1.00  0.00      LIGA H  
+ATOM      3  H12 LIG     1      45.189  44.806  47.976  1.00  0.00      LIGA H  
+ATOM      4  C2  LIG     1      44.215  46.268  49.230  1.00  0.00      LIGA C  
+ATOM      5  H21 LIG     1      44.918  46.774  49.902  1.00  0.00      LIGA H  
+ATOM      6  C3  LIG     1      42.949  46.057  49.639  1.00  0.00      LIGA C  
+ATOM      7  C10 LIG     1      42.394  46.876  50.773  1.00  0.00      LIGA C  
+ATOM      8 H101 LIG     1      41.409  47.298  50.470  1.00  0.00      LIGA H  
+ATOM      9 H102 LIG     1      43.042  47.746  51.023  1.00  0.00      LIGA H  
+ATOM     10 H103 LIG     1      42.254  46.300  51.708  1.00  0.00      LIGA H  
+ATOM     11  C5  LIG     1      42.531  44.764  47.450  1.00  0.00      LIGA C  
+ATOM     12  H51 LIG     1      41.689  44.585  46.754  1.00  0.00      LIGA H  
+ATOM     13  H52 LIG     1      43.070  43.794  47.560  1.00  0.00      LIGA H  
+ATOM     14  C6  LIG     1      43.551  45.791  46.903  1.00  0.00      LIGA C  
+ATOM     15  C7  LIG     1      42.935  47.181  46.671  1.00  0.00      LIGA C  
+ATOM     16  C8  LIG     1      43.776  48.451  46.895  1.00  0.00      LIGA C  
+ATOM     17  H81 LIG     1      43.769  48.744  47.966  1.00  0.00      LIGA H  
+ATOM     18  H82 LIG     1      43.349  49.295  46.314  1.00  0.00      LIGA H  
+ATOM     19  H83 LIG     1      44.824  48.298  46.569  1.00  0.00      LIGA H  
+ATOM     20  C9  LIG     1      41.425  47.312  46.435  1.00  0.00      LIGA C  
+ATOM     21  H91 LIG     1      41.032  46.466  45.835  1.00  0.00      LIGA H  
+ATOM     22  H92 LIG     1      41.207  48.262  45.902  1.00  0.00      LIGA H  
+ATOM     23  H93 LIG     1      40.894  47.342  47.411  1.00  0.00      LIGA H  
+ATOM     24  C4  LIG     1      42.024  45.157  48.855  1.00  0.00      LIGA C  
+ATOM     25  H41 LIG     1      41.025  45.635  48.755  1.00  0.00      LIGA H  
+ATOM     26  H42 LIG     1      41.890  44.208  49.413  1.00  0.00      LIGA H  
+ATOM     27  H61 LIG     1      43.926  45.419  45.923  1.00  0.00      LIGA H  
+ENDMDL
+CONECT    1    2    3    4   14
+CONECT    2    1
+CONECT    3    1
+CONECT    4    1    5    6    6
+CONECT    5    4
+CONECT    6    4    4    7   24
+CONECT    7    6    8    9   10
+CONECT    8    7
+CONECT    9    7
+CONECT   10    7
+CONECT   11   12   13   14   24
+CONECT   12   11
+CONECT   13   11
+CONECT   14    1   11   15   27
+CONECT   15   14   16   20
+CONECT   16   15   17   18   19
+CONECT   17   16
+CONECT   18   16
+CONECT   19   16
+CONECT   20   15   21   22   23
+CONECT   21   20
+CONECT   22   20
+CONECT   23   20
+CONECT   24    6   11   25   26
+CONECT   25   24
+CONECT   26   24
+CONECT   27   14
+END

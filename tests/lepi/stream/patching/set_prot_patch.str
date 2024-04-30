@@ -1,0 +1,120 @@
+* Temporary file to define patches variables
+* To be merged into userparam.str and param_set_check.str
+* RS 13/05/2021
+* 
+
+! userparam.str
+
+! Set the number of patches for a ligand and for the protein unit:
+! patchcountligp@{ligand_number}@{protein_unit}
+! ligand 5, protein unit number 1 has one patch
+set patchcountligp51 1
+
+! The name of the Nth patch for a ligand and for the protein unit:
+! patchnamelig@{ligand_number}p@{protein_unit}n@{patch_serial_number}
+! ligand 5, protein unit number 1, the first patch is named 'HSPD'
+set patchnamelig5p1n1 HSPD
+
+! The residue number of the Nth patch for a ligand and for the protein unit:
+! patchreslig@{ligand_number}p@{protein_unit}n@{patch_serial_number}
+! ligand 5, protein unit number 1, first patch needs residue 133
+set patchreslig5p1n1 133
+
+
+!!!!!!!!!!!!!!!!!!!
+! param_set_check.str
+
+! give default values for the count
+! if patch is defined but not count, it'll be ignored
+! additional checks might be needed
+
+! proteinunit is known
+! numligands is known
+
+! loop over ligands
+set l 1 ! lign 1
+label countp_lig
+    ! loop over protein units for a specific ligand
+    set prot 1 ! p 1
+    label countp_prot
+        set test 0
+        set test @?patchcountligp@@{l}@@{prot}
+        if @test .eq. 0 then
+            set patchcountligp@@{l}@@{prot} 0
+        else
+            ! set felx residue (different indexing)
+            set respatch 1
+            ! loop over patches for a specific unit and a specific ligand
+            label patch_set_flex
+                goto assign_flex
+                label after_assign_flex
+                !!!! DEBUG PRINT STARTS
+                echo @patchflexlig@@{l}p@@{prot}n@@{respatch}
+                echo @patchnamelig@@{l}p@@{prot}n@@{respatch}
+                !!!! DEBUG PRINT ENDS
+                incr respatch
+            if respatch .le. @patchcountligp@@{l}@@{prot} goto patch_set_flex
+        endif
+        incr prot
+    if @prot .le. @proteinunit goto countp_prot
+    incr l
+if @l .le. @numligands goto countp_lig
+
+return
+!stop
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! find the index of the residue among the flexible residues of the protein unit
+!!! patch definitions (from above)
+! ligand : @l
+! protein unit : @prot
+! patch index [serial number] : @respatch
+! residue number: @{patchreslig@@{l}p@@{prot}n@@{respatch}}
+
+!!! flexible residues definitions (from above)
+! number of flexible residues in relevant protein unit: @numflex@@prot
+! residue number of the Nth flexible residue : @flex@@prot@@n
+
+label assign_flex
+! make sure patch name and residue exists
+set test 0
+set test @?patchnamelig@@{l}p@@{prot}n@@{respatch}
+if @test .eq. 0 then
+    echo EnzyDock WARNING: No patch name found for ligand @l    
+    echo EnzyDock WARNING: protein unit @prot patch number @respatch
+    stop
+
+endif
+
+set test 0
+set test @?patchreslig@@{l}p@@{prot}n@@{respatch}
+if @test .eq. 0 then
+    echo EnzyDock WARNING: No residue number found for ligand @l    
+    echo EnzyDock WARNING: protein unit @prot patch number @respatch
+    stop
+
+endif
+
+set assigned false
+set flexind 1
+! loop over flexible residues of a specific ligand and protein unit
+label match_flex
+    if @patchreslig@@{l}p@@{prot}n@@{respatch} .eq. @flex@@{prot}@@{flexind} then
+        set patchflexlig@@{l}p@@{prot}n@@{respatch} @flexind
+        set patchflexnamel@@{l}p@@{prot}i@@{flexind} @patchnamelig@@{l}p@@{prot}n@@{respatch}
+        set assigned true
+    endif
+    incr flexind
+if @flexind .le. @numflex@@{prot} goto match_flex
+
+! make sure flexible residue was found
+
+if @assigned .eq. true then
+    goto after_assign_flex
+else
+    echo EnzyDock WARNING: Residue that needs a patch is not defined as flexible:
+    echo EnzyDock WARNING: Ligand state: @l; Protein unit: @prot; Patch nuber: @respatch
+    echo EnzyDock WARNING: Residue number: @patchreslig@@{l}p@@{prot}n@@{respatch}
+    stop
+
+endif

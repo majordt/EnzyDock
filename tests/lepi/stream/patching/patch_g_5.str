@@ -1,0 +1,6 @@
+* Patch residue(s) for ligand #1
+*
+
+patch HSPD FLX1 1   ! This is HIS133
+! Some patches need autogenerate, could cause problems with water
+! autogenerate angles dihedrals

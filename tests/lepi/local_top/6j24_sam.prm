@@ -1,0 +1,523 @@
+!! Additional Missing parameters for SAM  
+!taken from ~/../majort/charmm/c43a1_mndo97_dhfr/toppar.tar.gz
+!  /toppar/stream/prot/toppar_all36_prot_na_combined.str
+! sam rtf and sam prm are in the .str file 
+!
+!this .str file is also copied to here:
+!/home/qnt/tamaran/charmm/workspace/lepi/local_top
+!
+!=========================================================================
+! CHARMM parameters for SAM, 
+!=========================================================================
+ATOMS
+
+MASS  -1  SP        32.06000 ! positive sulfur for S-adenosylmethionine (SAM) 
+MASS  -1  CN7       12.01100  ! Nucleic acid carbon (equivalent to protein CT1)
+MASS  -1  CN5       12.011000  ! Nucleic acid purine C4 and C5
+MASS  -1  CN2      12.011000   ! Nucleic acid aromatic carbon to amide
+MASS  -1  CN7B      12.011000  ! Nucleic acid aliphatic carbon for C1'
+MASS  -1  CN8B      12.011000  ! Nucleic acid carbon (equivalent to protein CT2)
+MASS  -1  CN4       12.011000  ! Nucleic acid purine C8 and ADE C2
+MASS  -1  HN1       1.008000   ! Nucleic acid amine proton
+MASS  -1  HN3        1.008000  ! Nucleic acid proton (equivalent to protein HA)
+MASS  -1  HN5        1.008000  ! Nucleic acid ribose hydroxyl proton
+MASS  -1  HN7        1.008000  ! Nucleic acid proton (equivalent to protein HA)
+MASS  -1  HN8        1.008000  ! Bound to CN8 in nucleic acids/model compounds
+MASS  -1  ON6B      15.999400  ! Nucleic acid ribose ring oxygen
+MASS  -1  ON5       15.999400  ! Nucleic acid ribose hydroxyl oxygen
+MASS  -1  NN1       14.007000  ! Nucleic acid amide nitrogen
+MASS  -1  NN2       14.007000  ! Nucleic acid protonated ring nitrogen
+MASS  -1  NN4       14.007000  ! Nucleic acid purine N7
+MASS  -1  NN3A      14.007000  ! Nucleic acid unprotonated ring nitrogen, ade N1 and N3
+
+BONDS
+!-------------------------------------------------------------------------
+!CN8B S 240.000 1.858 !hms: r0 from QM(aq)
+!sahc
+CN8B S      240.000     1.8160 ! sahc
+!sam
+CN8B SP     198.000     1.8160
+CT2  SP     198.000     1.8160
+CT3  SP     240.000     1.8160
+
+!-------------------------------------------------------------------------
+! more misiisng parameters 
+!
+! tamar ansbacher 5/18
+!
+! adoppted from par_all36_na.prm
+
+CN7  CN8B   222.5       1.512   ! From exp. 
+CN7  ON6B   240.0       1.480   ! From CN7  ON6
+CN7  CN7    222.5       1.529  	! From exp 
+CN7B NN2    220.0       1.456   !A/C
+CN7B CN7B   200.0       1.450   ! 
+CN2  NN1    360.0       1.366   !C,A,G JWK, adm jr. 10/2/91
+CN2  CN5    360.0       1.358   !A, adm jr. 11/97
+CN5  NN4    310.0       1.355   !A, adm jr. 11/97
+CN7B ON5    428.0       1.400   ! check adm jr., 
+!CN7B ON5    250.0       1.400   ! From CN7  ON5
+CN7  ON5    428.0       1.42    !From CN8 ON2, adm jr., 8/30/98
+CN7B HN7    309.0       1.111   ! From CN8  HN7 (NF)
+CN7  HN7    309.0       1.111   ! From above
+! from par_all36_na.prm  27.5
+HN1  NN1    488.0       1.00    !A,C,G, JWK, adm jr. 7/24/91 par_all36_na.prm
+CN4  HN3    380.0       1.09    !G,A, JWK par_a7 9/30/91 par_all36_na.prm
+CN3T HN3    350.0       1.09    !T, JWK same par_all36
+CN4  NN2    320.0       1.374   !A, adm jr. 11/97
+CN4  NN3A   420.0       1.322   !A, adm jr. 11/97
+CN5  NN3A   350.0       1.312   !A, JWK par_a8 9/30/91
+ON5   HN5    545.0       0.960  !RIBOSE, MeOH
+!CN8  HN8    309.0       1.111   !Alkanes, sacred
+CN8B  HN8    309.0       1.111   !adoppted from above
+CN7B ON6B   260.0       1.420   ! From CN7B ON6
+CN5  NN2    300.0       1.375   !A, adm jr. 11/97
+CN7B CN7   200.0        1.450   ! from above
+CN2  NN3A   400.0       1.342   !A, adm jr. 11/97
+CN5  CN5    310.0       1.361   !A, adm jr. 11/97
+CN4  NN4    400.0       1.305   !G,A, adm jr. 11/97
+! end of bond insertions tamar ansbacher
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+ANGLES
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!first 4 are taken from thiel paper
+!but they reappear in the .str file so i commented them 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!S CN8B CN7 58.000 114.5 ! sahc  taken from thiel paper. 
+!CN8B S CT2 34.000 100.0 !hms: theta0 from QM(aq) thiel paper
+!S CN8B HN8 46.100 111.3 ! sahc thiel paper
+!CT3 S CN8B 34.0 103.0 !hms K from CT2-S-CT3; theta0 from QM(aq) thiel paper
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  /toppar/stream/prot/toppar_all36_prot_na_combined.str
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!sahc
+S    CN8B CN7     58.000   114.5000
+CN8B S    CT2     34.000    95.0000
+S    CN8B HN8     46.100   111.3000
+!sam
+SP   CT2   HA2    46.100   111.3000
+SP   CT2   CT2    58.000   114.5000
+CT2  SP    CT3    34.000    95.0000
+CT2  SP    CN8B   34.000    95.0000
+SP   CT3   HA3    46.100   111.3000
+CT3  SP    CN8B   34.000    95.0000
+SP   CN8B  CN7    58.000   114.5000
+SP   CN8B  HN8    46.100   111.3000
+!-------------------------------------------------------------------------
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!for adenine 13/5/18 tamar ansbacher
+!!!!!! same  par_all36_na.prm as above  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!@@@@@@@@ Adenine
+! ade 6-mem ring
+CN2  NN3A CN4     90.0     117.8  !6R) adm jr. 11/97
+NN3A CN4  NN3A    60.0     133.0  !6R)
+CN4  NN3A CN5     90.0     110.1  !6R)
+CN5  CN5  NN3A    60.0     127.4  !6R) bridgeC4
+CN2  CN5  CN5     60.0     121.0  !6R) bridgeC5
+CN5  CN2  NN3A    60.0     110.7  !6R)
+CN5  CN5  NN2    100.0     105.7  !5R) bridgeC4
+CN5  CN5  NN4    100.0     110.0  !5R) bridgeC5
+CN4  NN4  CN5    120.0     104.6  !5R)
+NN2  CN4  NN4    100.0     113.4  !5R)
+CN4  NN2  CN5    100.0     106.3  !5R)
+NN2  CN5  NN3A   100.0     126.9  !bridgeC4
+CN2  CN5  NN4    100.0     129.0  !bridgeC5
+HN3  CN4  NN3A    38.0     113.5  !h2
+NN3A CN2  NN1     50.0     130.7  !n6
+CN5  CN2  NN1     50.0     118.6  !
+CN2  NN1  HN1     40.0     121.5  !h61,h62, C,A,G
+HN1  NN1  HN1     31.0     117.0  !C,A,G
+NN4  CN4  HN3     39.0     124.8  !h8, G,A
+NN2  CN4  HN3     39.0     121.8  !
+CN5  NN2  HN2     30.0     129.4  !h9
+CN4  NN2  HN2     30.0     125.0  !
+!  tamar 27.5 
+HN3  CN4  NN2B    40.0     122.2  ! h8 (NN4 CN4 HN3 124.8)
+CN2  CN3  HN3     38.0     120.1  !C h5
+CN3  CN3  HN3     38.0     122.1  !C,U
+HN3  CN3  NN2     44.0     115.0  !C, h6
+CN1  CN3  HN3     30.0     120.3  !U, h5
+HN3  CN3  NN2B    30.0     114.3  !U, h6
+CN3T CN3  HN3     30.0     122.1  !T, h6
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! end of adenine  insertion 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! more parameters taken from par_all36_na.prm 13/5/18
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+HN7    CN7  ON6B     45.2    107.24  !
+HN7    CN7  CN8B     34.5    110.1   22.53   2.179 ! From HN7  CN7  CN8
+!HN7    CN7  CN7B     34.53   110.10  22.53   2.179
+ON6B   CN7  CN8B     90.0    108.2  ! 
+!ON6B  CN7  CN9      90.0    108.2  ! for 5MET patch, adm jr.
+ON6B   CN7  CN7      90.0    108.2  ! adoppted from above
+!ON8B  CN7  CN7      90.0    108.2  ! adoppted from above.
+CN7    ON6B CN7B     110.0    115.0   ! From CN7  ON6  CN7B
+ON6B   CN7B CN7B     90.0    106.0   ! 030998 
+HN7    CN7B NN2      43.0     111.0  !
+CN7B   CN7B HN7      33.4    110.10  22.53   2.179 ! following terms directly
+CN7B   CN7B CN7      110.0     96.0   ! 
+HN7    CN7B ON5      60.0    109.5  !
+HN7    CN7B CN7      34.53   110.10  22.53   2.179
+ON5    CN7B CN7B     80.0    108.4  ! 
+HN8    CN8B HN8      35.5    109.0    5.40   1.802  ! Alkanes, sacred
+HN7    CN7  ON5      60.0    109.5  ! 
+HN7    CN7  CN7B     34.53   110.10  22.53   2.179
+ON6B   CN7B NN2      110.0     112.0  !C/A RNA
+!CN7   CN7  ON2      115.0    109.7  !NF, 11/97, C4'C3'O3'
+CN7    CN7  ON5      115.0    109.7  !adoppted from above
+CN7B   CN7  ON5      115.0    109.7  !adoppted from above
+HN7    CN7  CN7      40.0    108.00  !
+!CN8   CN7  CN7      60.00   102.0   8.0   2.561  !NF, 11/97, C2'C3'C4'
+CN8B   CN7  CN7      60.00   102.0   8.0   2.561  !adoppted from above
+!ON6B  CN7B NN2      110.0     112.0  !C/A RNA
+!ON6B  CN7B N7       110.0     112.0  ! addopted from above
+!CN7   CN8  CN8      58.35    113.60   11.16   2.561 !alkane
+CN7    CN7  CN7B     58.35    113.60   11.16   2.561 !adoppted from above
+!HN8   CN8B CN8      34.53    110.10  22.53   2.179 ! alkane
+HN8    CN8B CN7      34.53    110.10  22.53   2.179 ! alkane
+!ON6   CN8B CN8      90.0     106.0
+ON5    CN7B CN7      90.0     106.0 !adoppted from above
+!CN4   NN2  CN5      100.0     106.3  !5R)
+CN4    NN2  CN7B     100.0     106.3  !adoppted from above
+!HN5   ON5  CN8      57.5     106.0  !RIBOSE, Adm Jr. MeOH
+HN5    ON5  CN7      57.5     106.0   !adoppted from above!
+HN5    ON5  CN7B     57.5     106.0  !adoppted from above!
+!HN7   CN7B ON6      45.2    107.24  ! 
+HN7    CN7B ON6B     45.2    107.24  ! adoppted from above
+!ON6B  CN7B CN7B     90.0    106.0   ! 030998 
+!CN7B  CN7B NN2B     110.0     111.0  !T/U/G, RNA 
+CN7B   CN7B NN2      110.0     111.0  !adoppted from above
+!CN5   NN2B CN7B     45.0     126.5  !G
+CN5    NN2  CN7B     45.0     126.5  !adppted from above
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!! end of tamar ansbacher insertion !!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+DIHEDRALS
+!!!!!!!!!!!!!!!!!!!!
+!!thiel parameters!!!
+!!!!!!!!!!!!!!!!!!!!!
+!CN8B S CT2 CT2 0.2400 1 180.0 !sahc, nilesh, from ALOW ALI SUL ION
+!CN7 CN8B S CT2 0.2 1 120.0 !sahc, nilesh, from bet C4'-C5'-O5'-P, adm jr.
+!ON6B CN7 CN8B S 3.4 1 180.0 !sahc, nilesh, from gam, RNA
+!CN7 CN7 CN8B S 0.20 4 180.0 !sahc, nilesh, from gam adm jr.
+!CN7 CN7 CN8B S 0.80 3 180.0 !sahc, nilesh, from gam C3'-C4'-C5'-O5'
+!CN7 CN7 CN8B S 0.40 2 0.0 !sahc, nilesh, from gam
+!CN7 CN7 CN8B S 2.50 1 180.0 !sahc, nilesh, from gam
+!HN7 CN7 CN8B S 0.195 3 0.0 !sahc, nilesh, from gam H-C4'-C5'-O5'
+!CT2 S CN8B HN8 0.28 3 0.0 !sahc, nilesh, from ALLOW ALI SUL ION
+HA CT2 S CN8B 0.28 3 0.0 !sahc, nilesh, from ALLOW ALI SUL ION
+HA CT3 S CN8B 0.28 3 0.0 !hms from HA-CT3-S-CT2
+CT3 S CN8B HN8 0.28 3 0.0 !hms from CT3-S-CT2-HA
+CT3 S CN8B CN7 0.24 1 180.0 !hms from CT3-S-CT2-CT2
+CT3 S CN8B CN7 0.37 3 0.0 !hms
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!ebd of thiel parameters!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! /toppar/stream/prot/toppar_all36_prot_na_combined.str!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!sahc
+!CN8B S    CT2  CT2       0.2400  1       180.0 ! sahc, nilesh, from ALOW    ALI SUL ION
+!CN7  CN8B S    CT2       0.2     1       120.0 ! sahc, nilesh, from bet C4'-C5'-O5'-P, adm jr.
+!ON6B CN7  CN8B S         3.4     1       180.0 ! sahc, nilesh, from gam, RNA
+!CN7  CN7  CN8B S         0.20    4       180.0 ! sahc, nilesh, from gam adm jr.
+!CN7  CN7  CN8B S         0.80    3       180.0 ! sahc, nilesh, from gam C3'-C4'-C5'-O5'
+!CN7  CN7  CN8B S         0.40    2         0.0 ! sahc, nilesh, from gam
+!CN7  CN7  CN8B S         2.50    1       180.0 ! sahc, nilesh, from gam
+!HN7  CN7  CN8B S         0.195   3         0.0 ! sahc, nilesh, from gam H-C4'-C5'-O5'
+!CT2  S    CN8B HN8       0.28    3         0.0 ! sahc, nilesh, from ALLOW   ALI SUL ION
+!HA2  CT2  S    CN8B      0.28    3         0.0 ! sahc, nilesh, from ALLOW   ALI SUL ION
+!sam
+CT3  SP   CN8B CN7      0.391   1       180.0
+CT3  SP   CN8B CN7      0.373   3         0.0
+CT3  SP   CT2  CT2      0.391   1       180.0
+CT3  SP   CT2  CT2      0.373   3         0.0
+CN8B SP   CT2  CT2      0.391   1       180.0
+CN8B SP   CT2  CT2      0.373   3         0.0
+CN7  CN8B SP   CT2      0.391   1       180.0
+CN7  CN8B SP   CT2      0.373   3         0.0
+CT2  SP   CT3  HA3      0.28    3         0.0
+HA2  CT2  SP   CT3      0.28    3         0.0
+CN8B SP   CT3  HA3      0.28    3         0.0
+HN8  CN8B SP   CT3      0.28    3         0.0
+ON6B CN7  CN8B SP        3.4     1       180.0 ! sahc, nilesh, from gam, RNA
+CN7  CN7  CN8B SP        0.20    4       180.0 ! sahc, nilesh, from gam adm jr.
+CN7  CN7  CN8B SP        0.80    3       180.0 ! sahc, nilesh, from gam C3'-C4'-C5'-O5'
+CN7  CN7  CN8B SP        0.40    2         0.0 ! sahc, nilesh, from gam
+CN7  CN7  CN8B SP        2.50    1       180.0 ! sahc, nilesh, from gam
+HN7  CN7  CN8B SP        0.195   3         0.0 ! sahc, nilesh, from gam H-C4'-C5'-O5'
+CT2  SP   CN8B HN8       0.28    3         0.0 ! sahc, nilesh, from ALLOW   ALI SUL ION
+HA2  CT2  SP   CN8B      0.28    3         0.0 ! sahc, nilesh, from ALLOW   ALI SUL ION
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!for adenine 13/5/18 tamar ansbacher
+!!!!!! same  par_all36_na.prm as above  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CN2  NN3A CN4  NN3A     1.8     2   180.0  ! adm jr. 11/97, 6-mem
+NN3A CN4  NN3A CN5      2.0     2   180.0  ! 
+CN4  NN3A CN5  CN5      1.8     2   180.0  ! 
+NN3A CN5  CN5  CN2      2.0     2   180.0  ! treated 2x
+CN5  CN5  CN2  NN3A     1.8     2   180.0  ! 
+CN5  CN2  NN3A CN4     10.0     2   180.0  ! 
+CN5  CN5  NN4  CN4      6.0     2   180.0  ! 5-mem
+CN5  NN4  CN4  NN2     14.0     2   180.0  ! 
+NN4  CN4  NN2  CN5      6.0     2   180.0  ! 
+CN4  NN2  CN5  CN5      6.0     2   180.0  !
+NN2  CN5  CN5  NN4     14.0     2   180.0  ! treated 2x
+!!!!!!!!!!!!!!!!!!!!!
+! TAMAR 27.5 
+!!!!!!!!!!!!!!!!!!!!
+HN3  CN3  CN3  HN3      3.0     2   180.0  ! adm jr. 11/97
+HN3  CN3  CN1  ON1      6.0     2   180.0  ! adm jr. 11/97
+HN2  NN2B CN3  HN3      1.5     2   180.0  ! adm jr. 11/97
+NN1  CN2  CN3  HN3      2.0     2   180.0  ! adm jr. 11/97
+NN3  CN2  CN3  HN3      3.4     2   180.0  ! adm jr. 11/97
+NN2  CN3  CN3  HN3      3.4     2   180.0  ! adm jr. 11/97
+CN2  CN3  CN3  HN3      4.6     2   180.0  ! adm jr. 11/97
+CN1  NN2  CN3  HN3      4.6     2   180.0  ! adm jr. 11/97
+HN3  CN4  NN4  CN5G     5.6     2   180.0  !G, H8
+HN3  CN4  NN2B CN5      5.6     2   180.0  !
+HN3  CN4  NN2B HN2      0.0     2   180.0  !
+HN7  CN7B ON6B CN7       0.000    3       0.0 ! RNA
+!HN7  CN7B CN7B CN7       0.195    3       0.0 ! RNA, H-C1'-C2'-C3'
+HN7  CN7B CN7  CN7       0.195    3       0.0 ! adoppted from up
+!in the next 3, CN7 instead of CN7B
+HN5  ON5  CN7  CN7       0.200    3       0.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7  CN7       0.000    2     180.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7  CN7       2.000    1       0.0 ! height of left side barrier, ejd, 2010 RNA update
+HN7  CN7  CN7  ON5       0.195   3         0.0
+CN7B CN7  ON5  HN5       0.8     3         0.0 ! RNA
+CN7B CN7  ON5  HN5       0.5     1         0.0 ! RNA
+!ejd, 2010 RNA update
+HN5  ON5  CN7B CN7B      0.000    6     180.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7B CN7B      0.400    3       0.0 ! shifts min, ejd, 2010 RNA update
+HN5  ON5  CN7B CN7B      0.400    2       0.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7B CN7B      0.800    1       0.0 ! height of right barrier and can shift min, ejd, 2010 RNA update
+HN7  CN7B CN7B CN7       0.195    3       0.0 ! RNA, H-C1'-C2'-C3'
+HN7  CN7  CN7B CN7B      0.195    3       0.0 ! RNA, H-C3'-C2'-C1'
+HN7  CN7  CN7 CN7B      0.195    3         0.0 !from above
+HN7  CN7B CN7B HN7       0.000    3       0.0 ! 
+HN7  CN7B CN7  HN7       0.000    3       0.0 ! from above
+HN7  CN7 CN7 HN7       0.000    3          0.0 ! from above
+HN7  CN7B CN7B ON6B      0.195    3        0.0 ! RNA, H-C2'-C1'-O4'
+!HN7  CN7B CN7B ON6B      0.195    3       0.0 ! RNA, H-C2'-C1'-O4'
+HN7  CN7 CN7 ON6B      0.195    3          0.0 ! from aobve
+HN8  CN8B CN7 ON6B       0.195    3        0.0 ! from aobve
+ON2  CN7B CN7B NN2       0.0     3         0.0 !for NADPH and bkbmod
+!HN7  CN7B CN7B NN2       0.0     3        0.0 !from above
+HN7  CN7B CN7B NN2       0.0     3         0.0
+!HN7  CN7  CN7B ON5       0.195    3       0.0 ! from above
+HN8  CN8B CN8  CN7      0.195   3         0.0
+HN8  CN8B CN7  CN7      0.195   3         0.0 !from above
+HN7  CN7  CN8  CN7B      0.195    3       0.0 !H-C3'-C2'-C1'
+HN7  CN7  ON5  HN5       0.0     3         0.0
+HN7  CN7  CN7  CN8B      0.195   3         0.0 !gam H-C3'-C4'-C5'
+!to C3'
+HN5  ON5  CN7B CN7       0.200    3       0.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7B CN7       0.000    2     180.0 ! ejd, 2010 RNA update
+HN5  ON5  CN7B CN7       2.000    1       0.0 ! height of left side barrier, ejd, 2010 RNA update
+HN7  CN7  CN7B ON5       0.195   3         0.0 ! for nadp/nadph (NOT!), adm jr.
+HN7  CN7B  CN7B ON5       0.195   3         0.0 ! from above
+HN7  CN7B  CN7  ON5       0.195   3         0.0 ! from above
+HN7  CN7B ON5  HN5       0.000    3       0.0
+HN7  CN7  ON6B CN7B      0.195    3       0.0 ! RNA
+HN8  CN8B CN8  HN8      0.195   3     0.0
+HN8  CN8B CN7  HN7      0.195   3     0.0 !from above
+CN7  ON6B CN7B NN2       0.0     3         0.0
+CN7B CN7B ON6B CN7       0.0     6         0.0 ! RNA, Lowers barrier
+CN7B CN7B CN7  CN7       0.0      6        0.0 ! RNA
+!======== CN7 CN7 CN8B ON2 = C3'-C4'-C5'-O5'
+! When O5' is ON2 (phosphodiester linkage):
+CN7  CN7  CN8B ON2      0.20    4       180.0 !gam adm jr.
+CN7  CN7  CN8B ON2      0.80    3       180.0 !gam C3'-C4'-C5'-O5'
+CN7  CN7  CN8B ON2      0.40    2         0.0 !gam
+CN7  CN7  CN8B ON2      2.50    1       180.0 !gam
+!
+!======== CN7 CN7 CN8B ON2 = C3'-C4'-C5'-O5'    !!!!!!!from above
+! When O5' is ON2 (phosphodiester linkage):
+CN7  CN7  CN7B ON5      0.20    4       180.0 !gam adm jr.
+CN7  CN7  CN7B ON5      0.80    3       180.0 !gam C3'-C4'-C5'-O5'
+CN7  CN7  CN7B ON5      0.40    2         0.0 !gam
+CN7  CN7  CN7B ON5      2.50    1       180.0 !gam
+!
+ON6B CN7B CN7B ON5       0.000    3       0.0
+CN7  CN7B CN7B ON6B      0.4     6         0.0 ! RNA
+CN7B  CN7 CN7 ON6B      0.4     6         0.0 ! from above
+CN7B ON6B CN7  CN8B      2.0     3         0.0 ! To lower barrier in RNA
+CN7B ON6B CN7  CN7      2.0     3         0.0 ! from above
+! When O5' is ON5 (5TER patch):
+ON6  CN7  CN8B ON5      3.4     1       180.0 !gam
+ON6B CN7  CN8B ON5      3.4     1       180.0 !gam, RNA
+!!!!!!!!!!!!!!!!!!!
+! When O5' is ON5 (5TER patch):   from above!!!!!
+ON6  CN7  CN7 ON5      3.4     1       180.0 !gam
+ON6B CN7  CN7 ON5      3.4     1       180.0 !gam, RNA
+ON5  CN7  CN7B CN7B      0.6     6         0.0 ! RNA, c2/c3 endo
+ON5  CN7  CN7B CN7B      0.0     5         0.0 ! RNA
+ON5  CN7  CN7B CN7B      1.6     3       180.0 ! RNA
+ON5  CN7B CN7  ON5       0.000    3       0.0
+CN7  CN7B CN7B NN2       0.0     3         0.0
+ON5  CN7  CN7  CN8B      0.2      4       0.0 !
+ON5  CN7  CN7  CN8B      0.8      3     180.0 !
+CN7B CN7  CN7  CN8B     0.2     4       180.0 !del, RNA
+NN2  CN7B CN7B ON5       0.000    3       0.0 ! Adenine and cytosine
+! end tamar 27.5 
+!!!!!!!!!!!!!!!!
+CN2  NN3A CN4  HN3      8.5     2   180.0  ! H2
+CN5  NN3A CN4  HN3      8.5     2   180.0  ! H2
+CN5  NN4  CN4  HN3      5.2     2   180.0  ! H8
+CN5  NN2  CN4  HN3      5.2     2   180.0  ! H8
+CN5  CN5  NN2  HN2      1.2     2   180.0  ! H9
+NN4  CN4  NN2  HN2      1.2     2   180.0  ! H9
+HN2  NN2  CN4  HN3      0.0     2   180.0  ! H8-C-N-H9
+CN4  NN3A CN2  NN1      4.0     2   180.0  ! N6
+CN5  CN5  CN2  NN1      4.0     2   180.0  ! N6
+NN4  CN5  CN2  NN1      0.0     2   180.0  ! N6
+CN5  CN2  NN1  HN1      0.5     2   180.0  ! 6-NH2
+NN3A CN2  NN1  HN1      0.5     2   180.0  ! 
+!! Butterfly motion
+NN3A CN5  CN5  NN4      7.0     2   180.0  !A, adm jr. 11/97
+CN2  CN5  CN5  NN2      7.0     2   180.0  !A
+NN3A CN2  CN5  NN4      2.0     2   180.0  !A
+CN2  CN5  NN4  CN4      2.0     2   180.0  !A
+CN4  NN3A CN5  NN2      2.0     2   180.0  !A
+NN3A CN5  NN2  CN4      2.0     2   180.0  !A
+!
+!
+!! Wild cards for adenine and guanine
+X    CN1  CN5G X        1.0     2   180.0  ! adm jr. 11/97
+X    CN2  NN2G X        1.0     2   180.0  ! 
+X    CN2  CN5  X        1.0     2   180.0  ! 
+X    CN4  NN2  X        1.5     2   180.0  ! 
+X    CN4  NN2B X        1.5     2   180.0  ! From X CN4 NN2 X
+X    CN4  NN3A X        3.5     2   180.0  ! 
+X    CN4  NN4  X        2.0     2   180.0  ! A,G
+X    CN5  CN5  X        0.0     2   180.0  !
+X    CN5G CN5  X        0.0     2   180.0  ! adm jr. 11/97
+X    CN5  NN2  X        1.5     2   180.0  !
+X    CN5  NN2B X        1.5     2   180.0  ! From X CN5 NN2 X
+X    CN5  NN3A X        1.0     2   180.0  !
+X    CN5  NN3G X        1.0     2   180.0  ! adm jr. 11/97
+X    CN5  NN4  X        1.0     2   180.0  !
+X    CN5G NN4  X        1.0     2   180.0  ! adm jr. 11/97
+X    CN2  NN3A X        1.0     2   180.0  !
+X    CN2  NN3G X        1.0     2   180.0  ! adm jr. 11/97
+
+
+!!%%%%%%% new terms for dna and the deoxyribose-based model compounds %%%%%%
+!! The following is for: THF3P (model for espilon), THFM3P (model for puckering),
+!! THF5P (model for gamma and beta), THFCH3IM (model for chi), nucleotide analogue
+!!@@@@@@ Begining of chi
+!!============= added for torsion about chi in adenine ============
+!!For link from sugar to base:
+CN7B NN2  CN4  HN3       0.3     2       180.0 ! NF
+CN7B NN2  CN5  CN5      11.0     2       180.0 ! adm jr.
+CN7B NN2  CN4  NN4      11.0     2       180.0 ! adm jr.
+CN7B NN2  CN4  NN3A     11.0     2       180.0 ! adm jr.
+!!For chi itself:
+!    !DNA:
+ON6  CN7B NN2  CN5       1.1     1       180.0 !
+ON6  CN7B NN2  CN4       1.1     1         0.0 ! NF 
+!        !RNA:
+ON6B CN7B NN2  CN5       1.1     1       180.0 !
+ON6B CN7B NN2  CN4       1.1     1         0.0 !
+!    !DNA:
+CN8  CN7B NN2  CN5       0.3     3         0.0 ! NF
+CN8  CN7B NN2  CN4       0.0     3       180.0 ! NF
+!    !RNA:
+CN7B CN7B NN2  CN5       0.3     3         0.0 ! NF
+CN7B CN7B NN2  CN4       0.0     3       180.0 ! NF
+!
+HN7  CN7B NN2  CN5       0.0     3         0.0 ! NF
+HN7  CN7B NN2  CN4       0.195   3         0.0 ! NF
+!!@@@@@@ End of chi in adenines 
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!! end of insertion tamar ansbacher!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!improper are taken from !!!!!
+!!!!!! same  par_all36_na.prm as above  !!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+IMPROPER
+!
+!V(improper) = Kpsi(psi - psi0)**2
+!
+!Kpsi: kcal/mole/rad**2
+!psi0: degrees
+!note that the second column of numbers (0) is ignored
+!
+!atom types           Kpsi                   psi0
+!
+!
+NN1  CN2  HN1  HN1      6.0     0     0.0     !A,C adm jr. 11/97
+CN2  NN3A CN5  NN1     40.0     0     0.0     !A
+
+
+!nonbonded are taken from thiel paper
+!but were commented because they seem unrelated 
+!!!!!!!!!!!!!!!!!
+
+!-------------------------------------------------------------------------
+!NONBONDED
+!FLA 0.0 -0.090 1.81 ! fluoride
+! from B. Roux via P. Jordan, dG= -111.8 kcal/mol
+!=========================================================================
+
+! to fix the nobond warnings 
+
+NONBONDED nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -
+cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+
+!V(Lennard-Jones) = Eps,i,j[(Rmin,i,j/ri,j)**12 - 2(Rmin,i,j/ri,j)**6]
+!
+!epsilon: kcal/mole, Eps,i,j = sqrt(eps,i * eps,j)
+!Rmin/2: A, Rmin,i,j = Rmin/2,i + Rmin/2,j
+!
+!atom  ignored    epsilon      Rmin/2   ignored   eps,1-4       Rmin/2,1-4
+!
+SP       0.0       -0.4500    2.20   !charged S in S-adenosylmethionine (SAM)
+
+! based on par_all36_na.prm
+HN1      0.0       -0.0460    0.2245 
+HN3      0.0       -0.046     1.1000 !adm jr. aromatic Hvdw 
+HN5      0.0       -0.0460    0.2245
+HN7      0.0       -0.0220    1.3200
+HN8      0.0       -0.0280    1.3400 ! Hydrogen bound to CN8
+!
+NN1      0.0        -0.20     1.85
+NN2      0.0        -0.20     1.85
+NN3A     0.0        -0.20     1.85 
+NN4      0.0        -0.20     1.85
+!
+ON5      0.0       -0.1521    1.77  
+ON6B     0.0       -0.1521    1.77  
+!
+! base ring C vdw param, 11/14/97, adm jr
+CN2      0.0       -0.10      1.9000
+CN4      0.0       -0.075     1.9000
+CN5      0.0       -0.075     1.9000
+CN7      0.0       -0.02      2.275  0.0   -0.01 1.90 !equivalent to protein CT1
+CN7B     0.0       -0.02      2.275  0.0   -0.01 1.90 !equivalent to protein CT1
+! alkane optimized terms below, Yin and MacKerell, 1998, JCC, In press
+CN8B     0.0       -0.0560    2.010  0.0   -0.01 1.90 !
+!
+!!!!!!!!!end of insertion from par_all36_na.prm!!
+
+END
+

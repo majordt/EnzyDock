@@ -1,0 +1,7 @@
+segid_a,resid_a,type_a,segid_b,resid_b,type_b,rmin,rmax,k,ligands
+pep1,133,ne2,lig,1,o4,2.6,2.8,100,all
+lig,1,c3,lig,1,c15,2,4,30,1
+lig,1,c7,lig,1,c12,2,3,30,1
+lig,1,c13,lig,1,o4,3,4.5,30,1
+lig,1,c14,lig,1,c4,2.6,3.2,30,1
+lig,1,o2,lig,1,c8,3.6,4.6,30,1

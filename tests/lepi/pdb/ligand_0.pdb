@@ -1,0 +1,51 @@
+HETATM    1  C1  BYO A 401     -46.172  32.395  27.491  0.85 74.21           C  
+HETATM    2  N1  BYO A 401     -48.877  33.754  27.694  0.85 93.01           N  
+HETATM    3  O1  BYO A 401     -48.036  30.245  25.827  0.85 81.55           O  
+HETATM    4  C2  BYO A 401     -45.080  31.546  27.256  0.85 72.60           C  
+HETATM    5  O2  BYO A 401     -47.675  33.048  29.560  0.85 86.42           O  
+HETATM    6  C3  BYO A 401     -44.913  30.395  28.373  0.85 71.81           C  
+HETATM    7  C4  BYO A 401     -46.129  29.706  28.869  0.85 77.89           C  
+HETATM    8  C5  BYO A 401     -46.206  28.326  28.204  0.85 69.76           C  
+HETATM    9  C6  BYO A 401     -47.289  27.451  28.902  0.85 74.18           C  
+HETATM   10  C7  BYO A 401     -48.566  28.325  29.381  0.85 74.29           C  
+HETATM   11  C8  BYO A 401     -48.721  29.585  28.499  0.85 80.60           C  
+HETATM   12  C9  BYO A 401     -47.532  30.567  28.712  0.85 82.07           C  
+HETATM   13  C10 BYO A 401     -47.593  31.512  27.673  0.85 81.80           C  
+HETATM   14  C11 BYO A 401     -48.160  31.312  26.312  0.85 82.57           C  
+HETATM   15  C12 BYO A 401     -48.879  32.341  25.555  0.85 78.11           C  
+HETATM   16  C13 BYO A 401     -49.361  33.532  26.307  0.85 82.12           C  
+HETATM   17  C14 BYO A 401     -48.027  32.789  28.457  0.85 86.58           C  
+HETATM   18  C15 BYO A 401     -49.406  32.120  24.135  0.85 75.97           C  
+HETATM   19  C16 BYO A 401     -50.760  31.943  23.923  0.85 77.86           C  
+HETATM   20  C17 BYO A 401     -51.240  31.752  22.642  0.85 73.65           C  
+HETATM   21  C18 BYO A 401     -50.381  31.746  21.573  0.85 61.84           C  
+HETATM   22  C19 BYO A 401     -49.041  31.921  21.781  0.85 67.96           C  
+HETATM   23  C20 BYO A 401     -48.553  32.113  23.057  0.85 70.98           C  
+HETATM   24  C21 BYO A 401     -46.312  33.308  26.332  0.85 71.11           C  
+HETATM   25  C22 BYO A 401     -50.014  30.287  28.835  0.85 77.94           C  
+CONECT    1    4   13   24
+CONECT    2   16   17
+CONECT    3   14
+CONECT    4    1    6
+CONECT    5   17
+CONECT    6    4    7
+CONECT    7    6    8   12
+CONECT    8    7    9
+CONECT    9    8   10
+CONECT   10    9   11
+CONECT   11   10   12   25
+CONECT   12    7   11   13
+CONECT   13    1   12   14   17
+CONECT   14   13    3   15
+CONECT   15   14   16   18
+CONECT   16   15    2
+CONECT   17   13    2    5
+CONECT   18   15   19   23
+CONECT   19   18   20
+CONECT   20   19   21
+CONECT   21   20   22
+CONECT   22   21   23
+CONECT   23   18   22
+CONECT   24    1
+CONECT   25   11
+END

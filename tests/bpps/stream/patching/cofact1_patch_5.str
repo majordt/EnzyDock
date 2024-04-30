@@ -1,0 +1,14 @@
+* Patch covalent link between carbocation and diphosphate
+*
+
+patch GPP ligand_@currligand 1 COF@in1 1
+!patch CCPP ligand_@currligand 1 COF@in1 1
+
+! Some patches need autogenerate, could cause problems with water
+autogenerate angles dihedrals
+
+! Build missing coordinates
+hbuild
+
+return
+

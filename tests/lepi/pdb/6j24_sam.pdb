@@ -1,0 +1,119 @@
+ATOM      1  N   SAM A   1     -58.571  35.385  33.445  1.00 50.23           N1+
+ATOM      2  CA  SAM A   1     -58.151  33.999  33.262  1.00 60.03           C  
+ATOM      3  C   SAM A   1     -57.390  33.501  34.489  1.00 64.97           C  
+ATOM      4 OT1  SAM A   1     -57.677  32.451  35.057  1.00 68.43           O  
+ATOM      5  CB  SAM A   1     -57.279  33.881  32.019  1.00 60.21           C  
+ATOM      6  CG  SAM A   1     -57.742  32.870  30.975  1.00 61.79           C  
+ATOM      7 SDP  SAM A   1     -56.802  32.966  29.424  1.00 63.96           S  
+ATOM      8 CGP  SAM A   1     -55.339  33.914  29.911  1.00 58.62           C  
+ATOM      9 C5'  SAM A   1     -57.753  34.185  28.472  1.00 57.94           C  
+ATOM     10 C4'  SAM A   1     -59.264  33.992  28.598  1.00 60.00           C  
+ATOM     11 O4'  SAM A   1     -59.941  35.011  27.886  1.00 50.80           O  
+ATOM     12 C3'  SAM A   1     -59.709  32.658  28.012  1.00 57.04           C  
+ATOM     13 O3'  SAM A   1     -60.552  32.023  28.937  1.00 55.22           O  
+ATOM     14 C2'  SAM A   1     -60.526  33.003  26.788  1.00 55.44           C  
+ATOM     15 O2'  SAM A   1     -61.650  32.160  26.667  1.00 51.91           O  
+ATOM     16 C1'  SAM A   1     -60.956  34.430  27.086  1.00 55.95           C  
+ATOM     17 OT2  SAM A   1     -56.459  34.151  34.963  1.00 62.77           O  
+ATOM     18  N1  SAM A   1     -64.218  37.772  24.927  1.00 52.29           N  
+ATOM     19  C2  SAM A   1     -64.313  37.153  26.157  1.00 50.60           C  
+ATOM     20  N3  SAM A   1     -63.327  36.278  26.554  1.00 47.62           N  
+ATOM     21  C4  SAM A   1     -62.284  36.032  25.734  1.00 55.39           C  
+ATOM     22  C5  SAM A   1     -62.172  36.649  24.497  1.00 53.56           C  
+ATOM     23  C6  SAM A   1     -63.151  37.536  24.085  1.00 45.42           C  
+ATOM     24  N6  SAM A   1     -63.074  38.129  22.895  1.00 51.75           N  
+ATOM     25  N7  SAM A   1     -61.026  36.209  23.929  1.00 52.01           N  
+ATOM     26  C8  SAM A   1     -60.419  35.342  24.764  1.00 47.58           C  
+ATOM     27  N9  SAM A   1     -61.192  35.235  25.885  1.00 54.74           N  
+ATOM     50 HT3  SAM A   1     -59.469  35.406  33.907  1.00 50.23           H  
+ATOM     51 HT2  SAM A   1     -57.891  35.872  34.011  1.00 50.23           H  
+ATOM     30  HA  SAM A   1     -59.039  33.380  33.134  1.00 60.03           H  
+ATOM     31 HB1  SAM A   1     -56.312  33.521  32.370  1.00 60.21           H  
+ATOM     32 HB2  SAM A   1     -57.241  34.861  31.543  1.00 60.21           H  
+ATOM     33 HG1  SAM A   1     -58.781  33.099  30.740  1.00 61.79           H  
+ATOM     34 HG2  SAM A   1     -57.630  31.868  31.388  1.00 61.79           H  
+ATOM     35 HGP2 SAM A   1     -54.538  33.739  29.193  1.00 58.62           H  
+ATOM     36 HGP3 SAM A   1     -55.583  34.976  29.930  1.00 58.62           H  
+ATOM     37 HGP1 SAM A   1     -55.013  33.597  30.902  1.00 58.62           H  
+ATOM     38 H5'  SAM A   1     -57.494  34.053  27.422  1.00 57.94           H  
+ATOM     39 H5'' SAM A   1     -57.498  35.182  28.830  1.00 57.94           H  
+ATOM     40 H4'  SAM A   1     -59.503  34.024  29.661  1.00 60.00           H  
+ATOM     41 H3'  SAM A   1     -58.864  32.010  27.779  1.00 57.04           H  
+ATOM     42 H3T  SAM A   1     -60.685  32.596  29.696  1.00 55.22           H  
+ATOM     43 H2'' SAM A   1     -59.978  32.888  25.853  1.00 55.44           H  
+ATOM     44 H2'  SAM A   1     -61.913  31.850  27.537  1.00 51.91           H  
+ATOM     45 H1'  SAM A   1     -61.915  34.406  27.603  1.00 55.95           H  
+ATOM     46  H2  SAM A   1     -65.162  37.355  26.809  1.00 50.60           H  
+ATOM     47 H61  SAM A   1     -63.799  38.768  22.601  1.00 51.75           H  
+ATOM     48 H62  SAM A   1     -62.291  37.940  22.286  1.00 51.75           H  
+ATOM     49  H8  SAM A   1     -59.480  34.820  24.578  1.00 47.58           H  
+ATOM     52 HT1  SAM A   1     -58.645  35.837  32.545  1.00 50.23           H  
+CONECT    1    2   50   51   52
+CONECT    2    1    3    5   30
+CONECT    3    2    4    4    4
+CONECT    3    4   17   17   17
+CONECT    3   17
+CONECT    4    3    3    3    3
+CONECT    5    2    6   31   32
+CONECT    6    5    7   33   34
+CONECT    7    6    8    9
+CONECT    8    7   35   36   37
+CONECT    9    7   10   38   39
+CONECT   10    9   11   12   40
+CONECT   11   10   16
+CONECT   12   10   13   14   41
+CONECT   13   12   42
+CONECT   14   12   15   16   43
+CONECT   15   14   44
+CONECT   16   11   14   27   45
+CONECT   17    3    3    3    3
+CONECT   18   19   19   19   19
+CONECT   18   23   23   23   23
+CONECT   19   18   18   18   18
+CONECT   19   20   20   20   20
+CONECT   19   46
+CONECT   20   19   19   19   19
+CONECT   20   21   21   21   21
+CONECT   21   20   20   20   20
+CONECT   21   22   22   22   22
+CONECT   21   27   27   27   27
+CONECT   22   21   21   21   21
+CONECT   22   23   23   23   23
+CONECT   22   25   25   25   25
+CONECT   23   18   18   18   18
+CONECT   23   22   22   22   22
+CONECT   23   24
+CONECT   24   23   47   48
+CONECT   25   22   22   22   22
+CONECT   25   26   26   26   26
+CONECT   26   25   25   25   25
+CONECT   26   27   27   27   27
+CONECT   26   49
+CONECT   27   16   21   21   21
+CONECT   27   21   26   26   26
+CONECT   27   26
+CONECT   30    2
+CONECT   31    5
+CONECT   32    5
+CONECT   33    6
+CONECT   34    6
+CONECT   35    8
+CONECT   36    8
+CONECT   37    8
+CONECT   38    9
+CONECT   39    9
+CONECT   40   10
+CONECT   41   12
+CONECT   42   13
+CONECT   43   14
+CONECT   44   15
+CONECT   45   16
+CONECT   46   19
+CONECT   47   24
+CONECT   48   24
+CONECT   49   26
+CONECT   50    1
+CONECT   51    1
+CONECT   52    1
+TER      51      SAM A 402
+END

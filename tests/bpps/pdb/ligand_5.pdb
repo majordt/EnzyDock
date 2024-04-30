@@ -1,0 +1,57 @@
+MODEL        1
+ATOM      3  C8  LIG     1      68.294  76.474  51.558  1.00 22.53      SUBA C  
+ATOM      4  C3  LIG     1      70.386  79.572  54.221  1.00 33.98      SUBA C  
+ATOM      6  C7  LIG     1      68.509  76.151  53.013  1.00 27.69      SUBA C  
+ATOM      8  C9  LIG     1      67.390  75.421  53.708  1.00 26.53      SUBA C  
+ATOM     10  C6  LIG     1      69.617  76.478  53.715  1.00 25.35      SUBA C  
+ATOM     12  C5  LIG     1      70.861  77.201  53.246  1.00 26.54      SUBA C  
+ATOM     14  C4  LIG     1      71.287  78.354  54.198  1.00 31.02      SUBA C  
+ATOM     16  C2  LIG     1      69.786  79.919  55.381  1.00 33.96      SUBA C  
+ATOM     18  C1  LIG     1      68.884  81.090  55.703  1.00 27.50      SUBA C  
+ATOM     19  C10 LIG     1      70.232  80.360  52.946  1.00 33.26      SUBA C  
+ATOM     20  H21 LIG     1      69.862  79.219  56.230  1.00  0.00      SUBA H  
+ATOM     21  H61 LIG     1      69.559  76.383  54.813  1.00  0.00      SUBA H  
+ATOM     22 H101 LIG     1      69.747  81.346  53.103  1.00  0.00      SUBA H  
+ATOM     23 H102 LIG     1      71.221  80.545  52.478  1.00  0.00      SUBA H  
+ATOM     24 H103 LIG     1      69.604  79.797  52.224  1.00  0.00      SUBA H  
+ATOM     25  H41 LIG     1      72.304  78.684  53.892  1.00  0.00      SUBA H  
+ATOM     26  H42 LIG     1      71.409  77.920  55.222  1.00  0.00      SUBA H  
+ATOM     27  H51 LIG     1      70.771  77.611  52.219  1.00  0.00      SUBA H  
+ATOM     28  H52 LIG     1      71.705  76.475  53.223  1.00  0.00      SUBA H  
+ATOM     29  H81 LIG     1      69.140  77.013  51.087  1.00  0.00      SUBA H  
+ATOM     30  H82 LIG     1      68.121  75.545  50.975  1.00  0.00      SUBA H  
+ATOM     31  H83 LIG     1      67.393  77.115  51.444  1.00  0.00      SUBA H  
+ATOM     32  H91 LIG     1      67.618  75.183  54.773  1.00  0.00      SUBA H  
+ATOM     33  H92 LIG     1      66.467  76.040  53.713  1.00  0.00      SUBA H  
+ATOM     34  H93 LIG     1      67.159  74.465  53.193  1.00  0.00      SUBA H  
+ATOM     35  H11 LIG     1      68.782  81.820  54.875  1.00  0.00      SUBA H  
+ATOM     36  H12 LIG     1      69.283  81.653  56.581  1.00  0.00      SUBA H  
+ENDMDL
+CONECT    3    6   29   30   31
+CONECT    4   14   16   16   19
+CONECT    6    3    8   10   10
+CONECT    8    6   32   33   34
+CONECT   10    6    6   12   21
+CONECT   12   10   14   27   28
+CONECT   14    4   12   25   26
+CONECT   16    4    4   18   20
+CONECT   18   16   35   36
+CONECT   19    4   22   23   24
+CONECT   20   16
+CONECT   21   10
+CONECT   22   19
+CONECT   23   19
+CONECT   24   19
+CONECT   25   14
+CONECT   26   14
+CONECT   27   12
+CONECT   28   12
+CONECT   29    3
+CONECT   30    3
+CONECT   31    3
+CONECT   32    8
+CONECT   33    8
+CONECT   34    8
+CONECT   35   18
+CONECT   36   18
+END
