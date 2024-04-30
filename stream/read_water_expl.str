@@ -1,0 +1,41 @@
+************************************************************
+* Read in explicit water molecules - that are inside the   *
+* grid.  Note that these waters have an angle, but not     *
+* H-H bond so no shaking of these waters                   *
+* Note that for now waters are not included in MC and are  *
+* fixed during SAMD - ( ??? KR and RS, 28-07-21)           *
+************************************************************
+*
+
+set NumObject ?nres
+
+open unit 1 form read name @pdbDIR/waterexpl.pdb
+read sequ pdb unit 1
+generate EWAT setup angle nodihedral
+rewind unit 1
+read coor pdb unit 1 offset @NumObject
+close unit 1     
+
+!hbuild sele type H* .and. segi EWAT end
+
+! Delete any explicit waters overlapping with the ligand
+define bump select segi ligand_@currligand .and. .not. hydrogen end
+
+define dump select .byres. ((segid EWAT .and. type OH2) .and. (bump .around. 2.5)) end
+
+if ?nsel .gt. 0 then
+   delete atoms select dump end
+endif
+
+define dump select segid EWAT .and. .not. hydrogen end
+
+if ?nsel .gt. 0 then
+   join EWAT renum
+   define explwat sele segid EWAT end
+else
+   set expl false
+   define explwat sele none end
+endif
+define flexwat sele flexwat .or. explwat @debugshow end
+
+return

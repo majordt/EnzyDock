@@ -1,0 +1,27 @@
+************************************************************
+* Read in water molecules - that are outside the grid      *
+* Note that these waters have an angle, but not H-H bond   *
+* so no shaking of these waters                            *
+* Note that for now waters are not included in MC and are  *
+* fixed during SAMD - ( ??? KR and RS, 28-07-21)           *
+************************************************************
+*
+
+set NumObject ?nres
+
+!bomlev -1
+open unit 1 form read name @pdbDIR/waterout.pdb
+!bomlev @bomblevel
+!if ?iostat .ne. -1 then
+   read sequ pdb unit 1
+   generate WOUT setup angle nodihedral
+   rewind unit 1
+   read coor pdb unit 1 offset @NumObject
+   close unit 1     
+!else
+!   echo "EnzyDock WARNING: Water requested but no pdb file found..."
+!endif
+
+!hbuild
+
+return
