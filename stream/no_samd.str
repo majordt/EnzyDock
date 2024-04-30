@@ -1,0 +1,20 @@
+************************************************************
+*                      Start no_samd.str                   *
+************************************************************
+* Check if ligand contains flexible rings. If not, switch
+* off SAMD.
+* 
+
+
+
+set 0 ../pdb/ligand_@currligand.pdb
+set 1 @currligand
+
+!system "../scripts/ring_aromatic.py @0 @1"
+close unit 33
+system "../scripts/python_wrapper.sh ../scripts/ring_aromatic.py @0 @1"
+open append unit 33 form name enzydock.log
+   
+stream @resDIR/samd_@currligand.str
+
+return
