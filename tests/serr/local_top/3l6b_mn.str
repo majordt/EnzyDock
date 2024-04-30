@@ -1,0 +1,41 @@
+* from: top_ions_won.str: general model for mono-, di-, and trivalent cations
+*
+
+!test "append" to determine if previous toppar files have been read and
+!add append to "read rtf card" if true
+set nat ?NATC
+set app
+!We're exploiting what is arguably a bug in the parser. On the left hand side,
+!the quotes have priority, so NAT is correctly substituted. On the right hand
+!side, the ? has priority and NATC" (sic) is not a valid substitution...
+if "@NAT" ne "?NATC" if @nat ne 0 set app append
+
+read rtf card @app
+* Topology for water and ions
+*
+37 1
+MASS  -1  Mn2p      54.93800 Mn ! Manganese
+
+default first none last none
+
+RESI Mn2p 2.00 ! Manganese +2 ion
+GROUP
+ATOM Mn2p Mn2p 2.00
+PATCH FIRST NONE LAST NONE
+
+END
+
+read para card flex @app
+* par_cation.prm for mono-, di-, and trivalent cations
+*
+
+ATOMS
+MASS  -1  Mn2p      54.93800 ! Manganese
+!standard C36 additive truncation
+NONBONDED nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -
+cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+
+Mn2p 0.0 -0.1685 1.2037 ! dA = -1760 kJ/mol
+END
+RETURN
+

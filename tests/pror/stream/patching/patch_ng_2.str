@@ -1,0 +1,6 @@
+* Patch residue(s) for ligand #2
+*
+
+patch CYSD pep1 130   ! This is Cys130
+! Some patches need autogenerate, could cause problems with water
+! autogenerate angles dihedrals

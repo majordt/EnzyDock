@@ -1,0 +1,5 @@
+smile,name
+[O-]C(CC([O-])=O)=O,Malonate
+[NH3+][C@H](C([O-])=O)CO,L_Serine
+[NH3+][C@@H](C([O-])=O)CO,D_Serine
+[NH3+][C@H](C([O-])=O)CCl,beta_Cl_D_Ala

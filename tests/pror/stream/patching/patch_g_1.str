@@ -1,0 +1,5 @@
+* Patch residue(s) for ligand #1
+*
+
+! Some patches need autogenerate, could cause problems with water
+! autogenerate angles dihedrals

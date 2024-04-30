@@ -1,0 +1,13 @@
+* Patch cofactor 1 for ligand state #1
+*
+
+patch SCHF FLX1 1 COF1 1
+
+! Some patches need autogenerate, could cause problems with water
+autogenerate angles dihedrals
+
+! Build missing coordinates
+hbuild
+
+return
+

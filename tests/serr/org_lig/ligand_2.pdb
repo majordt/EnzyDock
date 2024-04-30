@@ -1,0 +1,27 @@
+ATOM      1  CA  lig     1      -3.798   2.904   3.680  1.00  0.00           C  
+ATOM      2  N   lig     1      -4.079   1.908   4.699  1.00  0.00           N  
+ATOM      3  C   lig     1      -2.479   2.580   2.959  1.00  0.00           C  
+ATOM      4  O   lig     1      -1.815   1.593   3.265  1.00  0.00           O  
+ATOM      5  CB  lig     1      -3.780   4.263   4.391  1.00  0.00           C  
+ATOM      6  OG  lig     1      -3.506   5.304   3.445  1.00  0.00           O  
+ATOM      7  O1  lig     1      -2.050   3.410   1.965  1.00  0.00           O  
+ATOM      8  H1  lig     1      -3.394   1.171   4.786  1.00  0.00           H  
+ATOM      9  HA  lig     1      -4.634   2.957   2.983  1.00  0.00           H  
+ATOM     10  HB2 lig     1      -4.749   4.444   4.854  1.00  0.00           H  
+ATOM     11  HB3 lig     1      -3.005   4.262   5.158  1.00  0.00           H  
+ATOM     12  HG  lig     1      -3.496   6.152   3.896  1.00  0.00           H  
+ATOM     13  H2  lig     1      -4.132   2.356   5.602  1.00  0.00           H  
+CONECT    1    2    3    5    9
+CONECT    2    8   13    1
+CONECT    3    1    4    4    7
+CONECT    4    3    3
+CONECT    5    1    6   10   11
+CONECT    6    5   12
+CONECT    7    3
+CONECT    8    2
+CONECT    9    1
+CONECT   10    5
+CONECT   11    5
+CONECT   12    6
+CONECT   13    2
+END

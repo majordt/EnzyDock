@@ -1,0 +1,6 @@
+* Patch residue(s) for ligand #3
+*
+
+patch CYSD FLX1 5   ! This is Cys300
+! Some patches need autogenerate, could cause problems with water
+! autogenerate angles dihedrals
