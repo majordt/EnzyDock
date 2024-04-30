@@ -1,0 +1,39 @@
+Test cases:
+
+Terpenes (TPS):
+  - CotB2 (with GGPP and all other intermediates)
+  - AS    (with FPP) + read PSF + CRD
+  - BPPS  (with GPP and all other intermediates) + with consensus (seq)
+
+Covalent Docking:
+  - micha - Michael addition to "Proto-oncogene tyrosine-protein kinase Src"
+  - 3js1 - Fatty Acid Binding Protein, with water
+
+Patches to Protein:
+  - ProR - Change protonation states during docking
+  - SerR - Covalently bound cofactor (PLP). Ligands as CSV file.
+
+Consensus:
+  - AbyU - Old style - using harmonic best-fit
+  - LepI - Recommended - using PNOE (with user_consensues.csv).
+           Includes restraints in 'userrestraints.csv'
+
+Index:
+
+Implicit Water: 3js1, CotB2, AS
+
+GBSW: micha, Pror
+PBEQ: SerR, LepI, AbyU
+QMMM: AS, 3js1, AbyU
+
+Patch on Protein (proton): ProR
+Patch Protein  - Ligand  : micha, 3js1
+Patch Protein  - Cofactor: SerR
+Patch Cofactor - Ligand  : CotB2, AS, BPPS
+
+Consensus restraints : AbyU
+MCS restraints (seq) : BPPS
+MCS restraints (seed): LepI (from experiment)
+User-restraints      : LepI
+
+Ligands as CSV       : SerR
