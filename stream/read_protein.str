@@ -2,6 +2,8 @@
 *                      Start read_protein.str              *
 ************************************************************
 * Read protein psf and pdb
+* In case protein PSF and CRD were generated in advance (e.g., CHARMM-GUI)
+* Note that protein segments must be named PEP1, PEP2, ...
 *
 
 ! Read protein
@@ -9,10 +11,15 @@ open unit 1 form read name @psfDIR/@proteinname_withoutligand.psf
 read psf card unit 1 append
 close unit 1
 
-open unit 1 read form name @pdbDIR/@proteinname_withoutligand.pdb
-read coor pdb unit 1 resid
-close unit 1
-
+if @charmmgui .eq. true then
+   open read unit 1 form name @crdDIR/@proteinname_withoutligand.crd
+   read coor card unit 1
+   close unit 1
+else
+   open unit 1 read form name @pdbDIR/@proteinname_withoutligand.pdb
+   read coor pdb unit 1 resid
+   close unit 1
+endif
 !***********************************************************
 !*                      End read_protein.str
 !***********************************************************

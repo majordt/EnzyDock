@@ -1,0 +1,24 @@
+************************************************************
+*           Start read_psf_crd_protein.str                 *
+************************************************************
+* Read in protein PSF and CRD generated in advance (e.g., CHARMM-GUI)
+* Note that protein segments must be named PEP1, PEP2, ...
+*
+
+! Read in protein psf and coordinates
+
+open read unit 1 form name @psfDIR/@proteinname_withoutligand.psf
+read psf card unit 1
+close unit 1
+
+open read unit 1 form name @crdDIR/@proteinname_withoutligand.crd
+read coor card unit 1
+close unit 1
+
+!***********************************************************
+!*           End read_psf_crd_protein.str
+!***********************************************************
+
+return
+
+

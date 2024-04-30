@@ -1,5 +1,5 @@
 ************************************************************
-*                      Start read_ligand.str               *
+*                 Start read_ligand.str                    *
 ************************************************************
 * Read ligand pdb
 * 
@@ -27,16 +27,22 @@ if @in1 .eq. true then
          ! If covalent, then all torsions must be directionally
          ! outwards from link-point
          if @covalent .eq. true then
-             system "../scripts/smiles_tors.py @0 @1"
+             !system "../scripts/smiles_tors.py @0 @1"
+             close unit 33
+             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0 @1"
+             open append unit 33 form name enzydock.log
          else
-             system "../scripts/smiles_tors.py @0"
+             !system "../scripts/smiles_tors.py @0"
+             close unit 33
+             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0"
+             open append unit 33 form name enzydock.log
          endif
       endif
    endif
 endif
 
 !***********************************************************
-!*                      End read_ligand.str
+!*                 End read_ligand.str
 !***********************************************************
 
 return
