@@ -192,3 +192,5 @@ scalar wmain set 1.98 sele type CDY  end   ! from GLU CD
 scalar wmain set 1.40 sele type OEY* end   ! from GLU OE*
 scalar wmain set 1.52 sele type OY   end   ! from backbone O
 scalar wmain set 2.04 sele type CY   end   ! from backbone C
+
+return
