@@ -1,5 +1,5 @@
 ************************************************************
-*                  Start back_flex.str                     *
+*                  Start back_flex_ng.str                  *
 ************************************************************
 * Define flexible backbone atoms
 *
@@ -8,29 +8,30 @@ define fback sele none end
 
 set b 1
 
-label bfunit_loop
+label ng_bfunit_loop
 
    set c 1
 
-   if @numflex@@b .lt. 1 goto skip_bflex_loop
+   if @numflex@@b .lt. 1 goto ng_skip_bflex_loop
 
-   label bflex_loop
+   label ng_bflex_loop
 
      set nflag false
      set cflag false
      ! Check if residue is border-residue (if yes, terminal backbone atom must be fixed)
      calc nside @flex@@b@@c - 1   ! Get residue ID of residue on N-terminal side
-     goto check_nside
-     label after_check_nside
+     goto ng_check_nside
+     label ng_after_check_nside
      calc cside @flex@@b@@c + 1   ! Get residue ID of residue on C-terminal side
-     goto check_cside
-     label after_check_cside
+     goto ng_check_cside
+     label ng_after_check_cside
 
      if @nflag .eq. false then
       if @cflag .eq. false then
         define bflex sele type O .or. type CA .or. type HN .or. type HA end   ! Bare backbone without terminal atoms
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
         endif
       endif
      endif
@@ -45,7 +46,8 @@ label bfunit_loop
       if @cflag .eq. false then   
         define bflex sele type N .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + N
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
         endif
       endif
      endif
@@ -54,22 +56,24 @@ label bfunit_loop
       if @cflag .eq. true then   
         define bflex sele type C .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + C
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
         endif
       endif
      endif
 
-     define fback sele fback .or. (bflex .and. (segi FLX@b .and. resi @c)) @debugshow end
+     define fback sele fback .or. (bflex .and. (segi pep@b .and. resi @flex@@b@@c)) @debugshow end
+     !define fback sele fback .or. (bflex .and. (segi FLX@b .and. resi @c)) @debugshow end
 
      incr c
 
-   if c .le. @numflex@@b goto bflex_loop
+   if c .le. @numflex@@b goto ng_bflex_loop
 
-   label skip_bflex_loop
+   label ng_skip_bflex_loop
 
    incr b
 
-if b .le. @proteinunit goto bfunit_loop
+if b .le. @proteinunit goto ng_bfunit_loop
 
 set kbf_flag true
 
@@ -81,33 +85,33 @@ return
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Check if neighboring residue on N-terminal side is defined as flexible
-label check_nside
+label ng_check_nside
    set s 1
-   label sloop
+   label ng_sloop
       set t 1
-      if @numflex@@s .lt. 1 goto skip_tloop
-      label tloop
+      if @numflex@@s .lt. 1 goto ng_skip_tloop
+      label ng_tloop
          if @nside .eq. @flex@@s@@t set nflag true
          incr t
-      if t .le. @numflex@@s goto tloop
-      label skip_tloop
+      if t .le. @numflex@@s goto ng_tloop
+      label ng_skip_tloop
       incr s
-   if s .le. @proteinunit goto sloop
-goto after_check_nside
+   if s .le. @proteinunit goto ng_sloop
+goto ng_after_check_nside
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Check if neighboring residue on C-terminal side is defined as flexible
-label check_cside
+label ng_check_cside
    set u 1
-   label uloop
+   label ng_uloop
       set v 1
-      if @numflex@@u .lt. 1 goto skip_vloop
-      label vloop
+      if @numflex@@u .lt. 1 goto ng_skip_vloop
+      label ng_vloop
          if @cside .eq. @flex@@u@@v set cflag true
          incr v
-      if v .le. @numflex@@u goto vloop
-      label skip_vloop
+      if v .le. @numflex@@u goto ng_vloop
+      label ng_skip_vloop
       incr u
-   if u .le. @proteinunit goto uloop
-goto after_check_cside
+   if u .le. @proteinunit goto ng_uloop
+goto ng_after_check_cside
 

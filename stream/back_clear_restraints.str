@@ -5,9 +5,9 @@
 *
 
 define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) show end
+                 .or. type HN .or. type HA .or. type HA2) @debugshow end
 
-cons harm force 0.0 sele back show end
+cons harm force 0.0 sele back @debugshow end
 
 return
 
