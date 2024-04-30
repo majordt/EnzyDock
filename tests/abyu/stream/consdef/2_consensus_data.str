@@ -1,0 +1,49 @@
+* Consensus data for docking definitions
+* Will be written by Python code
+* fpatom (fingerprint atom) is consensus atom
+* latom is ligand atom
+* Total i in number of latom@i must match number of ligands
+*
+
+set numrefatom 1
+set fpatom1 C1
+set latom1 C1
+
+set numrefatom 2
+set fpatom2 C2
+set latom2 C2
+
+set numrefatom 3
+set fpatom3 O5
+set latom3 O5
+
+set numrefatom 4
+set fpatom4 O32
+set latom4 O32
+
+set numrefatom 5
+set fpatom5 C9
+set latom5 C9
+
+set numrefatom 6
+set fpatom6 C10
+set latom6 C10
+
+set numrefatom 7
+set fpatom7 O7
+set latom7 O7
+
+set numrefatom 8
+set fpatom8 C22
+set latom8 C22
+
+set numrefatom 9
+set fpatom9 C24
+set latom9 C24
+
+set numrefatom 10
+set fpatom10 C20
+set latom10 C20
+
+return
+

@@ -1,0 +1,32 @@
+* Additional Missing parameters for ligand
+*
+
+ATOMS
+MASS -1  P2   30.974000 !P ! phosphorus, adm, 2011 DNA update
+MASS -1  ON2  15.999400 !O ! Nucleic acid phosphate ester oxygen
+MASS -1  ON3  15.999400 !O ! Nucleic acid =O in phosphate
+
+BONDS
+ON2  P2     300.0       1.6800    !PPI2, from nad/ppi, adm jr. 7/01
+ON3  P2     480.0       1.5300    !PPI2, from nad/ppi, adm jr. 7/01
+
+ANGLES
+ON2  P2   ON3  88.9  111.6  !nad/ppi, jjp1/adm jr. 7/95
+ON3  P2   ON3 104.0  120.00 !nad/ppi, jjp1/adm jr. 7/95
+P2   ON2  P2  104.0  130.0  !-40.0  2.80 !nad/ppi, jjp1/adm jr. 7/95
+
+DIHEDRALS
+P2   ON2  P2   ON3  0.1  2  0.0  !nad/ppi, jjp1/adm jr. 7/95
+
+IMPROPER
+
+NONBONDED nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -
+cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+
+P2       0.0       -0.585     2.15
+ON2      0.0       -0.1521    1.77
+ON3      0.0       -0.1200    1.70
+
+END
+~
+
