@@ -5,7 +5,8 @@
 ! Get atom type of ligand covalent attach-point
 set 0 @topDIR/ligand_@currligand.str
 set 1 @liglink1
-system "../scripts/get_qm_atom_type.py @0 @1"
+!system "../scripts/get_qm_atom_type.py @0 @1"
+system "../scripts/python_wrapper.sh ../scripts/get_qm_atom_type.py @0 @1"
 open unit 101 read form name @topDIR/qm_atom_type.str
 if ?iostat .ne. -1 then
    stream @topDIR/qm_atom_type.str

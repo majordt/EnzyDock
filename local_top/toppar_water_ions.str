@@ -30,6 +30,8 @@
 !Solution: A Simple but Accurate Nonbonded Representation, PROTEINS:
 !Structure, Function, and Genetics 23:12-31 (1995)
 
+!RS: add CCAT pars from Shani 10/03/2022
+
 !test "append" to determine if previous toppar files have been read and
 !add append to "read rtf card" if true
 set nat ?NATC
@@ -59,6 +61,7 @@ MASS  -1  BAR      137.32700 BA ! Barium Ion
 MASS  -1  ZN        65.37000 ZN ! zinc (II) cation
 MASS  -1  CAD      112.41100 CD ! cadmium (II) cation
 MASS  -1  CLA       35.45000 CL ! Chloride Ion
+MASS  -1  CCAT      12.01100 C ! CATION ATOM- added by Shani
 
 default first none last none
 
@@ -175,7 +178,7 @@ MASS  -1  BAR      137.32700 ! Barium Ion
 MASS  -1  ZN        65.37000 ! zinc (II) cation
 MASS  -1  CAD      112.41100 ! cadmium (II) cation
 MASS  -1  CLA       35.45000 ! Chloride Ion
-
+MASS  -1  CCAT      12.01100 !CATION ATOM- added by Shani
 BONDS
 !
 !V(bond) = Kb(b - b0)**2
@@ -231,6 +234,7 @@ IMPROPER
 NONBONDED nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -
 cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
 
+CCAT    0.0       -0.0560     2.0100   0.0 -0.01 1.9 ! NONBONDED for CCAT																		 
 !TIP3P LJ parameters
 HT       0.0       -0.046     0.2245
 OT       0.0       -0.1521    1.7682
