@@ -1,0 +1,179 @@
+************************************************************
+*                Start match_seed_vac.inp                  *
+************************************************************
+* Align ligand to docked template in vacuum
+*  loop over templates: min energy of each cluster of seed
+*     READ restraints
+*     bring in center of mass
+*     apply consensues/userrestraints
+*     mc trans rot
+*     mc tros
+*     md
+*     REMOVE restraints
+*  write file niters@currligand.str
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+grid off
+
+! Read in new ligand
+! Reduce bomblevel to allow reading of propyl ring
+bomlev -1
+stream @strDIR/read_ligand.str @in1
+bomlev @bomblevel
+!RS: stream check if number of atom differs between ligands
+if @iter .eq. 1 then
+   stream @strDIR/check_natoms.str
+endif
+
+define ligand sele segid ligand_@currligand @debugshow end 
+
+! Update readable log file
+! open append unit 33 form name enzydock.log
+write title unit 33
+* Aligning in vacuum ligand_@currligand conformer # @iter (out of @maxit)
+*
+!    close unit 33
+
+! TODO - create updated fp files (different template not min e)
+! TODO - update template file for consensus bestfit (?)
+
+if @{fp_docking} .eq. true then
+   set dofp false
+   if @fromexp .eq. true then
+      set dofp true
+   else
+      if @currligand .ne. 1 then
+         set dofp true
+      endif
+   endif
+   if @dofp .eq. true then
+      ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Applying fingerprint restrain
+*
+!       close unit 33
+      stream @strDIR/fp_docking.str
+   endif
+endif
+if @{cons_docking} .eq. true then
+   if @currligand .ne. 1 then
+      ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Applying consensus restrain
+*
+!       close unit 33
+      stream @strDIR/consensus_docking.str
+   endif
+endif
+
+bomlev -1
+! RS: also renew water and cof restraints
+set orgwater @water
+set water false
+set orgnumcofactor @numcofactor
+set numcofactor 0
+
+open unit 101 read form name @stdDIR/userrestraints.str
+if ?iostat .ne. -1 then
+   set 0 vac
+   stream @stdDIR/userrestraints.str @0
+else
+   echo EnzyDock WARNING: userrestraints.str file missing!
+   echo EnzyDock WARNING: See documentation
+   ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* EnzyDock WARNING: userrestraints.str file missing!
+* EnzyDock WARNING: See documentation
+*
+!       close unit 33
+endif
+bomlev @bomblevel
+
+set water @orgwater
+set numcofactor @orgnumcofactor
+
+print cons
+noe
+   print
+end
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!               END SETUP, START TEMPLATING
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! move ligand to grid 
+coor stat sele ligand end
+calc xmov = - ?xave + @xcen
+calc ymov = - ?yave + @ycen
+calc zmov = - ?zave + @zcen
+
+! Do MC simulations
+
+! If MC requested, to rigid MC translation and rotation sampling
+! TODO DAN review nbonds to match vacuum - decide whole file!!!
+! from ligand mk conf
+nbonds cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswitch switch eps @ligeps @ligdielec
+
+nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+   vswitch switch @softon
+energy
+
+set orgtagwexp @tagwexp
+set tagwexp false
+set orgcovalent @covalent
+set covalent false
+set orgflexibledocking @flexibledocking
+set flexibledocking false
+
+stream @strDIR/mc_trot.str
+
+if mcflag .eq. true stream @strDIR/mc_tors.str        ! MC simulation of ligand torsional angles
+
+set tagwexp @orgtagwexp
+set covalent @orgcovalent
+set flexibledocking @orgflexibledocking
+
+! Do Simulated Annealing Molecular Dynamics
+! TODO DAN consider protocol in vaccum (ligand_mk_conformers.inp)
+if @samd .eq. true stream @strDIR/samd.str
+
+! Switch off soft potentials for final minimization
+nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+   vswitch switch @softoff
+
+! Minimization of the ligand within the grid
+
+! Relax from dyna
+mini sd nstep @mstep nprint @mprint
+stream @strDIR/clear_all_restraints.str
+! Relax from restraints
+mini abnr nstep @mstep nprint @mprint
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!              END TEMPLATING, START WRITING
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+open unit 1 form write name @resDIR/@currligand_@runid_@iter_0.pdb
+write coor pdb unit 1
+close unit 1
+
+if iter .eq. 1 then
+   open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
+   write psf card unit 1
+   close unit 1
+endif
+
+open write unit 1 card name @resDIR/@currligand_@runid_@iter_0.crd
+write coor unit 1 card 
+close unit 1 
+
+!***********************************************************
+!*                End match_seed_vac.inp                   *
+!***********************************************************
+
+return
+ 

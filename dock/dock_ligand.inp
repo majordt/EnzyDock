@@ -9,18 +9,21 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  START DOCK SETUP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! RS: clear restraints
+!stream @strDIR/clear_all_restraints.str
 ! DTM: Check delete command
-if ?nres .gt. 0 then dele atom
+!if ?nres .gt. 0 then dele atom
 
 ! Initiate needed variables
 set microiter 1 
     
+!!! DTM: Moved to enzydock.inp
 ! Reads in the grid
-if @usegrid .eq. true then
-   if @gridon .ne. true then
-      stream @strDIR/read_grid.str
-   endif
-endif
+!if @usegrid .eq. true then
+!   if @gridon .ne. true then
+!      stream @strDIR/read_grid.str
+!   endif
+!endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  END DOCK SETUP, START DOCKING
@@ -29,6 +32,8 @@ endif
 ! Docking micro-iterations
 label dock_microiter
 
+    ! RS: clear restraints
+    stream @strDIR/clear_all_restraints.str
     ! DTM: Check delete command
     if ?nres .gt. 0 then dele atom
 
@@ -39,50 +44,109 @@ label dock_microiter
     goto readligstruct
     label after_readligstruct
 
-    define ligand sele segid ligand_@currligand show end 
+    define ligand sele segid ligand_@currligand @debugshow end 
 
-    ! Move the ligand to the grid
-    coor stat sele ligand end
-    calc xmov = - ?xave + @xcen
-    calc ymov = - ?yave + @ycen
-    calc zmov = - ?zave + @zcen
-! DTM: Allow random translation within active site
-    if maxtrans .gt. @gridsize set maxtrans @gridsize ! Make sure user didn't allow translation outside grid
-    calc xmov = @xmov + (?rand - 0.5)*@maxtrans
-    calc ymov = @ymov + (?rand - 0.5)*@maxtrans
-    calc zmov = @zmov + (?rand - 0.5)*@maxtrans
-    coor trans xdir @xmov ydir @ymov zdir @zmov sele ligand end
-    coor stat sele ligand end
+    goto vac_trans
+    label after_vac_trans
 
 !    goto rotate 
 !    label after_rotate
 
+    ! RS: no rotation in ligand_simulate.inp or in ligand_mk_conformers.inp
+    !if @mkconfs .eq. true then
+    goto vac_rotate 
+    label after_vac_rotate
+    !endif
+
     ! Read in flexible residues. These are treated explicitly.
-    if @flexibledocking .eq. false then
-        cons fix sele none end
-        cons fix sele .not. (ligand .or. cofactors) end
-    else 
+    if @flexibledocking .eq. true then
         ! Cofactor patched to protein
         if @usegrid .eq. true then
            stream @strDIR/read_flex.str ! Read flexible residues, includes patching
            if patch_cofact .eq. true stream @strDIR/cofact_patch_ongrid.str ! Read cofactor patching (grid)
-           define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch - Added in v1.0d
-           stream @strDIR/define_flex_ongrid.str  ! Define flexible residue variables again after patching (grid)
         else
            if patch_cofact .eq. true stream @strDIR/cofact_patch_offgrid.str ! Read cofactor patching (no grid)
-           define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
+        endif
+    endif
+
+    ! read in waters
+    define flexwat sele none end ! Needed?
+    if @usegrid .eq. true then
+        if @tagwtin .eq. true then
+            stream @strDIR/read_water_in.str
+        endif
+        ! If all true, tagwexp will be set to true
+        if tagwexp .eq. true then
+           stream @strDIR/read_water_expl.str
+        endif
+    else
+        stream @strDIR/read_water.str
+    endif
+ 
+    ! redefine lig, cofs   
+    ! ligand
+    define ligand sele segi ligand_@currligand end
+    ! cofactors
+    define cofactors sele none end
+    set c 1
+    label assign_cofact_dl
+        define cofactors sele cofactors .or. segi COF@c @debugshow end
+        incr c
+    if c .le. @numcofactor goto assign_cofact_dl
+    ! waters
+    define flexwat sele none end
+    if @usegrid .eq. true then
+       if @tagwtin .eq. true then
+          define flexwat sele segid WTIN @debugshow end
+       endif
+    else
+       if @tagcwat .eq. true then
+          define flexwat sele segid CWAT @debugshow end
+       endif
+    endif
+    if tagwexp .eq. true then
+      define flexwat sele flexwat .or. segid EWAT @debugshow end 
+    endif
+
+    ! treat restraints (cons, fix)
+    ! restrain cof, water
+    stream @strDIR/clear_restraints.str
+
+    ! define flexible backbone, fix all but flex, restrain back
+    if @flexibledocking .eq. false then
+        if @halfcof .eq. true then
+            stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexwat) end
+    else 
+        if @usegrid .eq. true then
+           stream @strDIR/define_flex_ongrid.str  ! Define flexible residue variables again after patching (grid)
+           if @halfcof .eq. true then
+               stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+           endif
+        else
            stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
         endif
         cons fix sele none end
-        cons fix sele .not. (ligand .or. cofactors .or. flexx) show end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
     endif
-
+   
     ! Do MC simulations without restraints
-    stream @strDIR/clear_restraints.str
+    ! RS: moved earlier, leave restrain on backbone atoms
+    ! stream @strDIR/clear_restraints.str
 
-    ! Will look for water pdb file and read if present 
-    stream @strDIR/read_water.str
+    ! re-define everything
+    ! RS: copied above
+    !goto redefine_dock
+    !label after_redefine_dock
 
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* Docking ligand_@currligand conformer # @iter try # @microiter (out of @maxmit)
+*
+!    close unit 33
     ! If MC requested, to rigid MC translation and rotation sampling
     if @mcflag .eq. true then
        grid off
@@ -98,32 +162,88 @@ label dock_microiter
        label after_rotate
     endif
 
+    ! RS: establish bond, than redfine, than sample
+
     ! Covalent docking setup
     if @covalent .eq. true then
-
+    ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Creating covalent bond between ligand and protein
+*
+!       close unit 33
        stream @strDIR/cov_mov_lig.str        ! Move ligand into position for covalent bonding
        if @usegrid .eq. true then
           stream @strDIR/cov_generate_ongrid.str  ! Patch covalent link between protein and ligand
-          define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch - Added in v1.0d
-          stream @strDIR/define_flex_ongrid.str   ! Define flexible residue variables again after patching (grid)
        else
           stream @strDIR/cov_generate_offgrid.str  ! Patch covalent link between protein and ligand
-          define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
-          stream @strDIR/define_flex_offgrid.str   ! Define flexible residue variables again after patching (no grid)
        endif
-
     endif   
+    ! Covalent link between ligand and cofactor
+    if @{patch_lig_cofact} .eq. true then
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Creating covalent bond between ligand and cofactor
+*
+!       close unit 33
+       stream @strDIR/cov_ligcofac.str  ! Patch covalent link between ligand and cofactor
+    endif
+
+    ! RS: now redefine
+    ! RS: clear restraints - psf has changed while patching
+    stream @strDIR/clear_all_restraints.str
+
+    ! redefine lig, cofs   
+    ! ligand
+    define ligand sele segi ligand_@currligand end
+    ! cofactors
+    define cofactors sele none end
+    set c 1
+    label assign_cofact_dlp
+        define cofactors sele cofactors .or. segi COF@c @debugshow end
+        incr c
+    if c .le. @numcofactor goto assign_cofact_dlp
+    ! waters
+    define flexwat sele none end
+    if @usegrid .eq. true then
+       if @tagwtin .eq. true then
+          define flexwat sele segid WTIN @debugshow end
+       endif
+    else
+       if @tagcwat .eq. true then
+          define flexwat sele segid CWAT @debugshow end
+       endif
+    endif
+    if tagwexp .eq. true then
+      define flexwat sele flexwat .or. segid EWAT @debugshow end
+    endif
+
+    ! treat restraints (cons, fix)
+    ! restrain cof, water
+    stream @strDIR/clear_restraints.str
+
+    ! define flexible backbone, fix all but flex, restrain back
+    if @flexibledocking .eq. false then
+        if @halfcof .eq. true then
+            stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexwat) end
+    else 
+        if @usegrid .eq. true then
+           stream @strDIR/define_flex_ongrid.str  ! Define flexible residue variables again after patching (grid)
+           if @halfcof .eq. true then
+               stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+           endif
+        else
+           stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
+    endif
 
     ! Covalent link between ligand and cofactor
     if @{patch_lig_cofact} .eq. true then
-       !stream @strDIR/cov_mov_lig.str        ! Move ligand into position for covalent bonding (doesn't work here, rewrite)
-       stream @strDIR/cov_ligcofac.str  ! Patch covalent link between ligand and cofactor
-       define ligand sele segid ligand_@currligand show end   ! Must be redefined after patch
-       if @usegrid .eq. true then
-          stream @strDIR/define_flex_ongrid.str   ! Define flexible residue variables again after patching (grid)
-       else
-          stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
-       endif
        ! Do another round of MC translation/rotations to bring ligand close to cofactor
        if @mcflag .eq. true then
           grid off
@@ -146,9 +266,8 @@ label dock_microiter
     energy
     if mcflag .eq. true stream @strDIR/mc_tors.str        ! MC simulation of ligand torsional angles
 
-    !endif
-
-    stream @strDIR/clear_restraints.str
+    ! RS: add all stream @strDIR/clear_restraints.str
+    stream @strDIR/clear_all_restraints.str
 
     ! Calculates the energy of the ligand in the grid
     grid off
@@ -163,25 +282,79 @@ label dock_microiter
      
     set ener0 ?ener
 
+! RS - debug define restrain !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    ! RS: moved from below - contains cons harm clear
+    ! DTM: added fingerprint docking
+    if @{fp_docking} .eq. true then
+       set dofp false
+       if @fromexp .eq. true then
+          set dofp true
+       else
+          if @currligand .ne. 1 then
+             set dofp true
+          endif
+       endif
+       if @dofp .eq. true then
+          ! Update readable log file
+!          open append unit 33 form name enzydock.log
+          write title unit 33
+* Applying fingerprint restrain
+*
+!          close unit 33
+          stream @strDIR/fp_docking.str
+       endif
+    endif
+    if @{cons_docking} .eq. true then
+       if @currligand .ne. 1 then
+          ! Update readable log file
+!          open append unit 33 form name enzydock.log
+          write title unit 33
+* Applying consensus restrain
+*
+!          close unit 33
+          stream @strDIR/consensus_docking.str
+       endif
+    endif
+
     bomlev -1
+    ! RS: also renew water and cof restraints
     open unit 101 read form name @stdDIR/userrestraints.str
     if ?iostat .ne. -1 then
-       stream @stdDIR/userrestraints.str
+       if @usegrid .eq. true then
+          set 0 flx
+       else
+          set 0 pep
+       endif
+       stream @stdDIR/userrestraints.str @0
     else
        echo EnzyDock WARNING: userrestraints.str file missing!
        echo EnzyDock WARNING: See documentation
+       ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* EnzyDock WARNING: userrestraints.str file missing!
+* EnzyDock WARNING: See documentation
+*
+!       close unit 33
     endif
     bomlev @bomblevel
-
-    if @currligand .ne. 1 then
-        stream @strDIR/consensus_docking.str
-    endif
+ 
+    ! RS: move before since it clears all restraints
+    !if @currligand .ne. 1 then
+    !    stream @strDIR/consensus_docking.str
+    !endif
 
     ! Stream in backbone flexible definition here since it includes harmonic
     ! restraints that were cleared in clear_restraints.str and consensus_docking.str
     ! Only necessary when using grid
     if @usegrid .eq. true stream @strDIR/back_flex.str
 
+    !RS debug 30.05.23
+    print cons
+    noe
+       print
+    end
     ! Do Simulated Annealing Molecular Dynamics
     if @samd .eq. true stream @strDIR/samd.str
 
@@ -239,6 +412,29 @@ label dock_microiter
        if c .le. @proteinunit goto write_flex
     endif
 
+    ! Renana: Should the below code be within if-endif or not?
+    if @usegrid .eq. true then
+    ! the above line only relevant for covering no-grid cases
+        if @tagwtin .eq. true then
+          open write unit 1 form name @resDIR/waterin_@currligand_@runid_@iter_@microiter.crd
+          write coor card unit 1 sele segid WTIN end
+
+          open unit 1 form write name @resDIR/waterin_@currligand_@runid_@iter_@microiter.pdb
+          write coor pdb unit 1 sele segid WTIN end
+          close unit 1
+        endif
+    ! else
+    ! TODO - fill in od ave all waters as wtin if no grid
+    endif
+    if tagwexp .eq. true then
+       open write unit 1 form name @resDIR/waterexpl_@currligand_@runid_@iter_@microiter.crd
+       write coor card unit 1 sele segid EWAT end
+
+       open unit 1 form write name @resDIR/waterexpl_@currligand_@runid_@iter_@microiter.pdb
+       write coor pdb unit 1 sele segid EWAT end
+       close unit 1
+    endif
+
 !    stream @strDIR/clear_restraints.str
 
     incr microiter
@@ -271,7 +467,6 @@ label readligstruct
     read coor card unit 1 offset @NumObject
 !    close unit 1
 
-    define cofactors sele none end
     if @numcofactor .gt. 0 then 
        stream @strDIR/generate_cofactors.str
     endif
@@ -280,6 +475,67 @@ label readligstruct
 !        stream @strDIR/consensus_docking.str
 !    endif 
 goto after_readligstruct
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START REDEFINE_DOCK
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! re-define all named selections: ligand, cofactor, residues, water
+label redefine_dock
+
+
+    ! cofactors
+    define cofactors sele none end                                  
+    set c 1                                                       
+    label assign_cofact_df                                  
+        define cofactors sele cofactors .or. segi COF@c @debugshow end  
+        incr c                                                    
+    if c .le. @numcofactor goto assign_cofact_df            
+    
+    ! waters
+    define flexwat sele none end
+    if @usegrid .eq. true then
+       if @tagwtin .eq. true then
+          define flexwat sele segid WTIN @debugshow end
+       endif
+    else
+       if @tagcwat .eq. true then
+          define flexwat sele segid CWAT @debugshow end
+       endif
+    endif
+    if tagwexp .eq. true then
+      define flexwat sele flexwat .or. segid EWAT @debugshow end
+    endif
+
+    ! Do MC simulations without restraints
+    stream @strDIR/clear_restraints.str
+
+    ! ligand
+    define ligand sele segi ligand_@currligand end
+
+    ! flexible residues + re-apply restraints
+    if @flexibledocking .eq. false then
+        if @halfcof .eq. true then
+            stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexwat) end
+    else
+        if @usegrid .eq. true then
+           stream @strDIR/define_flex_ongrid.str  ! Define flexible residue variables again after reading waters (grid)
+           if @halfcof .eq. true then
+               stream @strDIR/define_halfcof.str ! defines cofactors and cofout
+           endif
+        else
+           stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after reading waters (no grid)
+        endif
+        cons fix sele none end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
+    endif
+
+    ! Do MC simulations without restraints
+    stream @strDIR/clear_restraints.str
+
+goto after_redefine_dock
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  START ROTATE
@@ -310,30 +566,127 @@ calc phi = ?rand * @maxrotangle !* 0.1
 goto after_rotate
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START VAC_TRANS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Move ligand into grid and do some random translations
+label vac_trans
+
+    ! Move the ligand to the grid
+    coor stat sele ligand end
+    calc xmov = - ?xave + @xcen
+    calc ymov = - ?yave + @ycen
+    calc zmov = - ?zave + @zcen
+! DTM: Allow random translation within active site
+    calc halfgridsize @gridsize/2.0
+    if maxtrans .gt. @halfgridsize set maxtrans @halfgridsize ! Make sure user didn't allow translation outside grid
+    calc xmov = @xmov + (?rand - 0.5)*@maxtrans
+    calc ymov = @ymov + (?rand - 0.5)*@maxtrans
+    calc zmov = @zmov + (?rand - 0.5)*@maxtrans
+    coor trans xdir @xmov ydir @ymov zdir @zmov sele ligand end
+    coor stat sele ligand end
+
+goto after_vac_trans
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START VAC_ROTATE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Rotates the ligand around a random number of degrees
+label vac_rotate
+    coor stat mass sele ligand end
+    !calc phi = ?rand * @maxrotangle
+
+! DTM: remove 0.1 factor
+calc phi = ?rand * @maxrotangle !* 0.1
+
+! DTM
+    calc xrot = ?rand
+    calc yrot = ?rand
+    calc zrot = ?rand
+    calc xxcen = ?xave
+    calc yycen = ?yave
+    calc zzcen = ?zave
+    !calc xrot = ?xave
+    !calc yrot = ?yave 
+    !calc zrot = ?zave
+
+    coor rotate xdir @xrot ydir @yrot zdir @zrot -
+         xcen @xxcen ycen @yycen zcen @zzcen phi @phi -
+         select ligand end
+
+goto after_vac_rotate
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  START POST DOCKING MINIMIZATION
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 label postminimize
 
-        skipe none 
-     
-        mini sd nstep @mstep nprint @mprint
-        mini abnr nstep @mstep nprint @mprint
+   skipe none 
+   
+   ! RS: debug1 w/ cons
+   if @debug .eq. true then
+      print cons
+   endif
+   mini sd nstep @mstep nprint @mprint
+   
+   ! Turn off consensus docking (if was called)
+   if @harmforce .gt. 0.0 then
+      if @{fp_docking} .eq. false then
+         if @currligand .ne. 1 then
+            ! consatoms were defined in previous defenition
+            ! of consensus docking and psf hasn't changed after that.
+            ! same holds for comp array
+            !cons harm bestfit mass force 0.0 comp -
+            !   notrans norot sele consatoms end
 
-        set int2 false
-        if @numcofactor .gt. 0 then set int2 true
-        if @flexibledocking .eq. true then set int2 true
-        if @flexibleback .eq. true then stream @strDIR/back_clear_restraints.str   ! Remove restraints on backbone atoms
-        if @int2 .eq. true then
-           inte sele ligand end sele .not. ligand end
-        else
-           inte sele ligand end
-        endif
-        ! Non-bonded interaction energy should also include bestfit and noe restraints
-        set intere0 ?ener 
-        energy
-        calc intere = @intere0 + ?harm + ?noe  ! Total non-bonded interaction energy
-        set enert ?ener   ! Total energy
-        calc enert0 = @enert - ?harm - ?noe
+            stream @strDIR/zero_consensus_docking.str
+            ! RS: debug1 w/o/ cons
+            if @debug .eq. true then
+               print cons
+            endif
+         endif
+      endif
+     
+      !!!stream @strDIR/clear_all_restraints.str
+      !!!! renew all restraints but consensus
+      !!!bomlev -1
+      !!!! RS: also renew water and cof restraints
+      !!!open unit 101 read form name @stdDIR/userrestraints.str
+      !!!if ?iostat .ne. -1 then
+      !!!stream @stdDIR/userrestraints.str
+      !!!else
+      !!!echo EnzyDock WARNING: userrestraints.str file missing!
+      !!!echo EnzyDock WARNING: See documentation
+      !!!endif
+      !!!bomlev @bomblevel
+      !!!
+      !!!! Stream in backbone flexible definition here since it includes harmonic
+      !!!! restraints that were cleared in clear_restraints.str and consensus_docking.str
+      !!!! Only necessary when using grid
+      !!!if @usegrid .eq. true stream @strDIR/back_flex.str
+      !!!! RS: debug1
+      !!!print cons
+     
+      mini sd nstep @mstep nprint @mprint
+   endif
+   mini abnr nstep @mstep nprint @mprint
+   
+   set int2 false
+   if @numcofactor .gt. 0 then set int2 true
+   ! RS:
+   if @water .eq. true then set int2 true
+   if @flexibledocking .eq. true then set int2 true
+   if @flexibleback .eq. true then stream @strDIR/back_clear_restraints.str   ! Remove restraints on backbone atoms
+   if @int2 .eq. true then
+      inte sele ligand end sele .not. ligand end
+   else
+      inte sele ligand end
+   endif
+   ! Non-bonded interaction energy should also include bestfit and noe restraints
+   set intere0 ?ener 
+   energy
+   calc intere = @intere0 + ?harm + ?noe  ! Total non-bonded interaction energy
+   set enert ?ener   ! Total energy
+   calc enert0 = @enert - ?harm - ?noe
 
 goto after_postminimize
 
@@ -389,6 +742,24 @@ label seeifmin
              incr c
           if c .le. @proteinunit goto write_flex_min
        endif
+
+       if @tagwtin .eq. true then
+         open write unit 1 form name @resDIR/waterin_mindock_@currligand.crd
+         write coor card unit 1 sele segid WTIN end
+
+         open unit 1 form write name @resDIR/waterin_mindock_@currligand.pdb
+         write coor pdb unit 1 sele segid WTIN end
+         close unit 1
+       endif
+       if tagwexp .eq. true then
+          open write unit 1 form name @resDIR/waterexpl_mindock_@currligand.crd
+          write coor card unit 1 sele segid EWAT end
+
+          open unit 1 form write name @resDIR/waterexpl_mindock_@currligand.pdb
+          write coor pdb unit 1 sele segid EWAT end
+          close unit 1
+       endif
+
 
     label after_write_min
 

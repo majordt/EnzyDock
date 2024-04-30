@@ -1,0 +1,368 @@
+************************************************************
+*                  renew_qmmm.inp                          *
+************************************************************
+* 
+
+set initlig 1
+set inititer 1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+set renew true
+banner
+bomlev 0
+wrnlev 10
+prnlev 5
+fast   on
+lower
+long
+
+! Write-protect all EnzyDock files
+!system "../scripts/files_lock.sh"
+
+! Update readable log file
+open append unit 33 form name enzydock.log
+write title unit 33
+* Renweing EnzyDock qm/mm run
+*
+!close unit 33
+
+! Gets job control parameters
+stream ../stream/param.str
+
+! Gets the user bomblevel
+bomlev @bomblevel
+
+set gridone true
+
+! Read topology and parameter files
+stream @strDIR/top_prm_all.str
+
+goto define_center
+label after_define_center
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END SETUP, START MAIN LOOP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+if patch_cofact .eq. true set flexibledocking false   ! Switch flexible MM refinement off
+
+if @cluster .eq. true then
+
+   ! QM/MM for lowest energy ligands
+   if @qmmm .eq. true then
+      !goto write_qmmm_dat
+      !label after_write_qmmm_dat
+      ! Do a QM/MM minimization without consensus restraints
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* Performing QM/MM minimization of ligand_@currligand inside protein:
+*
+!      close unit 33
+      open unit 30 read form name qmmm_cluster.inp
+      stream unit 30 !qmmm_cluster.inp
+   endif
+
+else
+
+   ! QM/MM for lowest energy ligands
+   if @qmmm .eq. true then
+   ! Do a QM/MM minimization without consensus restraints
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* Performing QM/MM minimization of ligand_@currligand inside protein
+*
+!      close unit 33
+      open unit 30 read form name qmmm.inp
+      stream unit 30 !stream qmmm.inp
+   endif
+
+endif
+
+! Creat final report with final scoring
+set 0 @numligands
+set 1 @runid
+set 2 @cluster
+close unit 33
+system "../scripts/python_wrapper.sh ../scripts/mk_report.py @0 @1 @2"
+open append unit 33 form name enzydock.log
+
+!if @covalent .ne. true then stream rmsd_dock.inp   ! Only do for consensus docking
+!stream rmsd_dock.inp
+
+stream @strDIR/softlink.str 0
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Update readable log file
+!open append unit 33 form name enzydock.log
+write title unit 33
+* EnzyDock run Finished
+*
+close unit 33
+
+stop
+
+!**********************************************************
+!                  END MAIN ENZYDOCK LOOP
+!**********************************************************
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START DEFINE_CENTER
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label define_center
+
+   ! Check if center of active site is set. If not, default
+   ! is to take center of current ligand geometry
+   set count 0
+   if @?bsitex .eq. 0 incr count
+   if @?bsitey .eq. 0 incr count
+   if @?bsitez .eq. 0 incr count
+
+   if @count .eq. 0 then
+      set xcen = @bsitex
+      set ycen = @bsitey
+      set zcen = @bsitez
+   else
+      ! Reads in ligand
+      bomlev -1
+      open unit 101 read form name @topDIR/ligand_@currligand.str
+      if ?iostat .ne. -1 then
+         stream @topDIR/ligand_@currligand.str
+      else
+        ! This is a critical warning
+        echo EnzyDock WARNING: Ligand rtf/prm file not found.
+        ! Update readable log file
+!        open append unit 33 form name enzydock.log
+        write title unit 33
+* EnzyDock WARNING: Ligand rtf/prm file not found.
+* Terminating EnzyDock run...
+*
+        close unit 33
+        stop
+      endif
+      stream @strDIR/read_ligand.str false
+      bomlev @bomblevel
+      coor stat select segid ligand_@currligand end
+      set xcen = ?xave
+      set ycen = ?yave
+      set zcen = ?zave
+      set bsitex = @xcen
+      set bsitey = @ycen
+      set bsitez = @zcen
+      dele atom
+   endif
+
+goto after_define_center
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START GRID_BOUNDARIES
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label grid_boundaries
+
+   ! Get extent of grid
+!   calc gxmin = @bsitex - @gridsize
+!   calc gymin = @bsitey - @gridsize
+!   calc gzmin = @bsitez - @gridsize
+!   calc gxmax = @bsitex + @gridsize
+!   calc gymax = @bsitey + @gridsize
+!   calc gzmax = @bsitez + @gridsize
+
+   calc gxmin = @bsitex - @gridsize * 0.5
+   calc gymin = @bsitey - @gridsize * 0.5
+   calc gzmin = @bsitez - @gridsize * 0.5
+   calc gxmax = @bsitex + @gridsize * 0.5
+   calc gymax = @bsitey + @gridsize * 0.5
+   calc gzmax = @bsitez + @gridsize * 0.5
+goto after_grid_boundaries
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_FLEX_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_flex_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele flexx end
+
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: FLEXIBLE RESIDUE(S) OFF GRID. INCREASE gridsize AND RERUN.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: FLEXIBLE RESIDUE(S) OFF GRID. INCREASE gridsize AND RERUN.
+* Terminating EnzyDock run...
+*
+      close unit 33
+      stop
+   else
+      echo EnzyDock: Flexible residues(s) within grid. 
+   endif
+
+goto after_check_flex_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_COFAC_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_cofac_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele cofactors end
+
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: COFACTOR(S) OFF GRID. INCREASE gridsize AND RERUN.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: COFACTOR(S) OFF GRID. INCREASE gridsize AND RERUN.
+* Terminating EnzyDock run...
+*
+      close unit 33
+      set halfcof true
+      !stop
+   else
+      echo EnzyDock: Cofactor(s) within grid. 
+   endif
+
+goto after_check_cofac_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START CHECK_WATER_ON_GRID
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label check_water_on_grid
+
+   ! Check extent of flexible residues
+   coor stat sele segid CWAT end
+ 
+   ! grid boundaries are defined in label grid_boundaries
+   set offgrid false
+   if ?xmin .lt. @gxmin set offgrid true
+   if ?ymin .lt. @gymin set offgrid true
+   if ?zmin .lt. @gzmin set offgrid true
+   if ?xmax .gt. @gxmax set offgrid true
+   if ?ymax .gt. @gymax set offgrid true
+   if ?zmax .gt. @gzmax set offgrid true
+   if @offgrid .eq. true then
+      echo EnzyDock WARNING: WATER(S) OFF GRID. CHECK WATER POSITIONS.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: WATER(S) OFF GRID. CHECK WATER POSITIONS.
+*
+!      close unit 33
+   !   stop
+   else
+      echo EnzyDock: Water(s) within grid.
+   endif
+
+   set tagwtin false
+   set tagwout false
+
+   define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
+      .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
+	  .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+	  .and. (prop z .lt. @gzmax)) @debugshow end
+   if ?nsel .gt. 0 then
+      set tagwtin true
+   else
+      set tagwout true
+      goto no_wat_in
+   endif
+
+   define watout sele (segid CWAT .and. .not. .byres. watin) @debugshow end
+   
+   if ?nsel .gt. 0 then
+      set tagwout true
+      delete atom sele (segid CWAT .and. .not. .byres. watin ) @debugshow end
+      join CWAT renum
+   endif
+
+   rename segid WTIN sele segid CWAT end
+
+! writing psf is dangerous - writes ALL existing atoms
+!   open write card unit 1 name @psfDIR/waterin.psf
+!   write psf  card unit 1 sele segid WTIN end
+!   close unit 1
+!
+!   open write card unit 1 name @crdDIR/waterin.crd
+!   write coor card unit 1 sele segid WTIN end
+!   close unit 1
+
+   open write card unit 1  name @pdbDIR/waterin.pdb
+   write coor pdb card unit 1 sele segid WTIN end
+   delete atom sele segid WTIN end
+
+   stream @strDIR/read_water.str
+   define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
+      .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
+      .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+	  .and. (prop z .lt. @gzmax)) @debugshow end
+
+   if tagwout .eq. false then
+      goto no_wat_out
+   endif
+
+   if tagwtin .eq. true then
+      delete atom sele .byres. watin @debugshow end
+      join CWAT renum
+   endif   
+
+   label no_wat_in
+
+   rename segid WOUT sele segid CWAT end
+
+! writing psf is dangerous - writes ALL existing atoms
+!   open write card unit 1 name @psfDIR/waterout.psf
+!   write psf  card unit 1 sele segid WOUT end
+!   close unit 1
+!
+!   open write card unit 1 name @crdDIR/waterout.crd
+!   write coor card unit 1 sele segid WOUT end
+!   close unit 1
+
+   open write card unit 1  name @pdbDIR/waterout.pdb
+   write coor pdb card unit 1 sele segid WOUT end
+   !delete atom sele segid WOUT end
+   ! RS: Don't dele so WOUT will be part of the grid
+   
+   label no_wat_out
+
+goto after_check_water_on_grid
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START WRITE_DAT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label write_dat
+
+    ! Starts writing the output summary file
+    open write unit 3 form name @resDIR/@currligand_summary_@runid.dat
+    write title unit 3
+**
+*  Summary for ligand number @currligand
+*  enert: total potential energy after minimization
+*  intere: interaction energy + restraint energy
+*  intere0: interaction energy
+*  ener0: initial potential energy (soft pot)
+*  iter: index for ligand structure
+*  microiter: index for rotations of ligand
+*  enert        intere      intere0      ener0       iter_microiter
+* ==============================================================
+* 
+
+goto after_write_dat
+

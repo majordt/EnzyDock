@@ -8,6 +8,10 @@
 
 set currligand 1
 
+if @renew .eq. true then
+   set currligand @initlig
+endif
+
 ! First check if FF parameters are defined for link atom
 if covalent .eq. true then
  if @?qmlink .eq. 0 goto qmmm_error
@@ -35,10 +39,15 @@ label qmmm_loop
 
    !set NumObject ?nres
 
-   if ?qchem .eq. 1 then
-      set 0 @qmcharge@@currligand
-      system "../scripts/write_qchem_inp.py @0"
-   endif
+!  DTM: Moved down to allow automatic detection of charge
+!   if ?qchem .eq. 1 then
+!      set 0 @qmcharge@@currligand
+!      !system "../scripts/write_qchem_inp.py @0"
+!      system "../scripts/python_wrapper.sh ../scripts/write_qchem_inp.py @0"
+!   ! RS: aviod problems with change in number of atoms
+!   else
+!      if @nchange .eq. true goto natom_error
+!   endif
 
    ! Reads in a new ligand
    bomlev -1
@@ -48,6 +57,13 @@ label qmmm_loop
    else
      ! This is a critical warning
      echo EnzyDock WARNING: Ligand rtf/prm file not found.
+     ! Update readable log file
+!     open append unit 33 form name enzydock.log
+     write title unit 33
+* EnzyDock WARNING: Ligand rtf/prm file not found.
+* Terminating EnzyDock run...
+*
+     close unit 33
      stop
    endif
    bomlev @bomblevel
@@ -61,10 +77,33 @@ label qmmm_loop
 
    ! Must read structure here so that we can define groups
    set iter 1
+   if @renew .eq. true then
+      set iter @inititer
+      ! let other ligands start from iter 1
+      set renew false
+   endif
 
    open read unit 1 form name @resDIR/@currligand_@proj_cluster@iter/all_mm_min_clust@iter_@currligand_@runid.crd
    read coor card unit 1 !offset @NumObject
    close unit 1
+
+   ! If charge not defined, detect here
+   if @?{qmcharge@@currligand} .eq. 0 then
+      coor dipole sele segi ligand_@currligand end
+      set qmcharge@currligand ?charge
+   endif
+
+   if ?qchem .eq. 1 then
+      set 0 @qmcharge@@currligand
+      !system "../scripts/write_qchem_inp.py @0"
+      close unit 33
+      system "../scripts/python_wrapper.sh ../scripts/write_qchem_inp.py @0"
+      open append unit 33 form name enzydock.log
+
+   ! RS: avoid problems with change in number of atoms
+   else
+      if @nchange .eq. true goto natom_error
+   endif
 
    ! Read flexible part of protein that was modified in MM minimization
    ! Overwrites existing coordinates.
@@ -77,8 +116,28 @@ label qmmm_loop
    !print coor
 
    ! Remove restraints for final QM/MM minimization
-   define QMS sele segid ligand_@currligand show end
+
+   ! RS - moved from below ->
+   define ligand sele segid ligand_@currligand @debugshow end
+   set c 1
+   define cofactors sele none end
+   label read_qcofactors
+      define cofactors sele cofactors .or. segi COF@c @debugshow end
+      incr c
+   if c .le. @numcofactor goto read_qcofactors
+   ! <- RS - moved from below
+
+   ! RS (1 line) - check with LepI - before back_flex.str
+   !stream @strDIR/clear_restraints.str
+
+   define QMS sele segid ligand_@currligand @debugshow end
    
+   ! DTM: Moved here before restraints applied
+   open unit 31 read form name @strDIR/useqmmm.str
+   stream unit 31
+
+   stream @strDIR/clear_restraints.str
+
    if @flexibledocking .eq. true then
       define flex sele none end
       set b 1
@@ -86,7 +145,7 @@ label qmmm_loop
          if @numflex@@b .lt. 1 goto skip_define_qflex_loop1
          set c 1
          label define_qflex_loop2
-            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) @debugshow end
             incr c
          if c .le. @numflex@@b goto define_qflex_loop2
          label skip_define_qflex_loop1
@@ -94,49 +153,74 @@ label qmmm_loop
       if b .le. @proteinunit goto define_qflex_loop1
 
       if @flexibledocking .eq. true then
-         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) show end
+!         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
+         define back sele flex .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) @debugshow end
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
-         define flexx sele flex .and. .not. back show end
+         define flexx sele flex .and. .not. back @debugshow end
          ! Backbone atoms are not flexible unless specifically defined as flexible
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
       endif
 
       ! If backbone atoms are flexible
       if flexibleback .eq. true then
-         open unit 31 read form name @strDIR/back_flex.str
+         !open unit 31 read form name @strDIR/back_flex.str
+         ! RS
+         open unit 31 read form name @strDIR/back_flex_ng.str
          stream unit 31
          !stream @strDIR/back_flex.str
          define back sele back .and. .not. fback end
       endif
 
       ! Define flexible region
-      define flexx sele flex .and. .not. back show end
+      define flexx sele flex .and. .not. back @debugshow end
 
    endif
-   define ligand sele segid ligand_@currligand show end
-   set c 1
-   define cofactors sele none end
-   label read_qcofactors
-      define cofactors sele cofactors .or. segi COF@c show end
-      incr c
-   if c .le. @numcofactor goto read_qcofactors
+   ! RS - move earlier ->
+!   define ligand sele segid ligand_@currligand @debugshow end
+!   set c 1
+!   define cofactors sele none end
+!   label read_qcofactors
+!      define cofactors sele cofactors .or. segi COF@c @debugshow end
+!      incr c
+!   if c .le. @numcofactor goto read_qcofactors
+   ! <- RS - move earlier
 
-   open unit 31 read form name @strDIR/useqmmm.str
-   stream unit 31
+   ! DTM: moved up due to problems with restraints (c48a1 and up)
+   !open unit 31 read form name @strDIR/useqmmm.str
+   !stream unit 31
    !stream @strDIR/useqmmm.str
+
+   ! KR + RS: make sure water are not set to false
+   define flexwat sele none end
+   if @water .eq. true then
+     define flexwat sele segid WTIN end
+   endif
+   if tagwexp .eq. true then
+     define flexwat sele flexwat .or. segid EWAT @debugshow end
+   endif
 
    !cons harm clear 
    if @flexibledocking .eq. true then
-      cons fix sele .not. (QMS .or. cofactors .or. flexx) end
+      if @water .eq. true then
+         cons fix sele .not. (QMS .or. cofactors .or. flexx .or. flexwat) end
+      else
+         cons fix sele .not. (QMS .or. cofactors .or. flexx) end
+      endif
    else
-      cons fix sele .not. (QMS .or. cofactors) end
+      if @water .eq. true then
+         cons fix sele .not. (QMS .or. cofactors .or. flexwat) end
+      else
+         cons fix sele .not. (QMS .or. cofactors) end
+      endif
    endif
    ! If minimization radius is set, do minimization of nearby residues as well
    ! This definition overrides earlier fixes
    if @minradius .gt. 0.0 then
-      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
-      cons fix sele .not. flexradius end
+      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) @debugshow end
+      if ?nsel .gt. 0 then
+         cons fix sele .not. flexradius end
+      endif
    endif
    !noe 
    !   reset
@@ -158,6 +242,13 @@ label qmmm_loop
      bomlev -1
      ! ABNR seems to not release memory properly, if called many times could become a problem.
      ! Possible solution is to fix code or just change to another minimizer like CG
+     ! Update readable log file
+!     open append unit 33 form name enzydock.log
+     write title unit 33
+* Performing QM/MM minimization of cluster # @iter (out of @ncluster)
+*    of ligand_@currligand inside protein
+*
+!     close unit 33
      mini sd   nstep @qmstep nprint @qmprint
      mini powe nstep @qmstep nprint @qmprint
      mini abnr nstep @qmstep nprint @qmprint
@@ -172,7 +263,7 @@ label qmmm_loop
      calc qmtot ?qmel + @evdw
 
      open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_qmmm_min_clust@iter_@currligand_@runid.crd
-     write coor card unit 1 sele QMS show end
+     write coor card unit 1 sele QMS @debugshow end
      *  qmtot: Total QM/MM energy (qmel + qmvdw)
      *  qmel:  QM/MM electrostatic energy
      *  qmvdw: QM/MM vdW energy
@@ -185,7 +276,7 @@ label qmmm_loop
      *
 
      open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_qmmm_min_clust@iter_@currligand_@runid.pdb
-     write coor pdb unit 1 sele QMS show end
+     write coor pdb unit 1 sele QMS @debugshow end
      *  qmtot: Total QM/MM energy (qmel + qmvdw)
      *  qmel:  QM/MM electrostatic energy
      *  qmvdw: QM/MM vdW energy
@@ -213,15 +304,15 @@ label qmmm_loop
 
         if @numcofactor .gt. 0 then
            open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_qmmm_min_clust@iter_@currligand_@runid.crd
-           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+           write coor card unit 1 sele ligand .or. cofactors .or. flex @debugshow end
 
            open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_qmmm_min_clust@iter_@currligand_@runid.pdb
-           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex @debugshow end
            close unit 1
         endif
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_qmmm_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele QMS .or. flex show end
+        write coor card unit 1 sele QMS .or. flex @debugshow end
         *  qmtot: Total QM/MM energy (qmel + qmvdw)
         *  qmel:  QM/MM electrostatic energy
         *  qmvdw: QM/MM vdW energy
@@ -234,7 +325,7 @@ label qmmm_loop
         *
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_qmmm_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele QMS .or. flex show end
+        write coor pdb unit 1 sele QMS .or. flex @debugshow end
         *  qmtot: Total QM/MM energy (qmel + qmvdw)
         *  qmel:  QM/MM electrostatic energy
         *  qmvdw: QM/MM vdW energy
@@ -248,20 +339,20 @@ label qmmm_loop
         close unit 1
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_qmmm_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele flex show end
+        write coor card unit 1 sele flex @debugshow end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_qmmm_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele flex show end
+        write coor pdb unit 1 sele flex @debugshow end
         close unit 1
 
      endif
 
      if @numcofactor .gt. 0 then
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_qmmm_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele ligand .or. cofactors show end
+        write coor card unit 1 sele ligand .or. cofactors @debugshow end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_qmmm_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele ligand .or. cofactors show end
+        write coor pdb unit 1 sele ligand .or. cofactors @debugshow end
         close unit 1
      endif
 
@@ -272,6 +363,8 @@ label qmmm_loop
    if @iter .le. @ncluster goto qmmm_cluster_loop  
 
    incr currligand
+
+   stream @strDIR/clear_all_restraints.str ! DTM
 
    dele atoms sele all end
 
@@ -303,6 +396,24 @@ goto after_write_qmmm_clust_dat
 
 label qmmm_error
    echo EnzyDock WARNING: Missing parameters for QM/MM... skipping
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: Missing parameters for QM/MM... skipping
+*
+!   close unit 33
 return
 
+label natom_error
+   echo EnzyDock WARNING: Number of atoms differs between ligands... skipping
+   echo EnzyDock WARNING: In future CHARMM implementations it might be OK
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: Number of atoms differs between ligands... skipping
+* EnzyDock WARNING: In future CHARMM implementations it might be OK
+*
+!   close unit 33
+
+return
 

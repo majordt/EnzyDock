@@ -46,12 +46,19 @@ label read_ligand
    else
      ! This is a critical warning
      echo EnzyDock WARNING: Ligand rtf/prm file not found.
+     ! Update readable log file
+!     open append unit 33 form name enzydock.log
+     write title unit 33
+* EnzyDock WARNING: Ligand rtf/prm file not found.
+* Terminating EnzyDock run...
+*
+     close unit 33
      stop
    endif
    bomlev @bomblevel
 
    ! "_" is dummy variable
-   define _ sele .not. init show end
+   define _ sele .not. init @debugshow end
 
    bomlev @bomblevel 
 
@@ -90,6 +97,10 @@ label read_ligand
    !if @currligand .eq. 1 then coor copy comp second
 
    set iter = 1
+   !RS: maxit may differ between ligands if sa vacuum + clustering was performed
+   if @mkconfs .eq. true then
+      stream niters@currligand.str
+   endif
 
    label next_struct
 
@@ -103,11 +114,11 @@ label read_ligand
          close unit 1
 
          ! Compute all atom RMSD values
-         coor rms select segid LIGAND_@currligand show end
+         coor rms select segid LIGAND_@currligand @debugshow end
          set allrms = ?rms
 
          ! Compute the heavy atom RMSD values
-         coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
+         coor rms select segid LIGAND_@currligand .and. .not. hydrogen @debugshow end
          set hvyrms = ?rms
 
          write title unit 3 
@@ -139,7 +150,7 @@ label read_ligand
       close unit 1
 
       ! Compute the heavy atom RMSD values
-      coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
+      coor rms select segid LIGAND_@currligand .and. .not. hydrogen @debugshow end
       set hvyrms = ?rms
 
       write title unit 4 

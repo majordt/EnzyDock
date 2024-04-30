@@ -28,7 +28,7 @@
 ! J. Chem. Theory Comput. 2019, 15, 5116-5134.
 !
 ! This program is free software and is intended for academic use only; 
-! you can redistribute it and/or modify it under the terms of the
+! you can redistribute it and/or modify it for non-profit purposes and under the terms of the
 ! GNU General Public License as published by the Free Software Foundation;
 ! either version 2 of the License, or any later version.
 ! 
@@ -58,8 +58,99 @@ long
 ! Write-protect all EnzyDock files
 system "../scripts/files_lock.sh"
 
+! Update readable log file
+open write unit 33 form name enzydock.log
+write title unit 33
+* Starting EnzyDock run
+*
+!close unit 33
+
 ! Gets job control parameters
 stream ../stream/param.str
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! SZ:
+! Option to create pdb/str files for ligads from smile strings
+! Define prepare_ligands to true (userparam.str)
+! Need to place ligands.csv in the pdb directory (see example)
+! Will create ligand_{1,2,3,4..}.pdb ligand_{1,2,3,4..}.str on place
+
+if @{prepare_ligands} .eq. true then
+    set 0 @cgenff 
+    !system "../scripts/prepare.py @0"
+    close unit 33
+    system "../scripts/python_wrapper.sh ../scripts/prepare.py @0"
+    open append unit 33 form name enzydock.log
+
+    bomlev -1
+    open unit 101 read form name @strDIR/prepare.str
+    if ?iostat .ne. -1 then
+        ! Update readable log file
+!        open append unit 33 form name enzydock.log
+        write title unit 33
+* Preparing ligands pdb/str files from smiles string in ./pdb/ligands.csv file
+*
+!        close unit 33
+        stream @strDIR/prepare.str    
+    endif
+endif
+
+set currligand 1
+label no_lone_pair
+    ! delete lone pair from toppar
+    set 0 @currligand
+    close unit 33
+    system "../scripts/python_wrapper.sh ../scripts/lp.py @0"
+    open append unit 33 form name enzydock.log
+    incr currligand
+if @currligand .le. @numligands goto no_lone_pair
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Reorder ligands if needed, to maximize number of common atoms
+! Uses RdKit MCS functionality
+if @{fp_docking} .eq. true then
+   ! User can use fp_docking for finding matching atoms without re-ordering 
+   if @fpknownorder .eq. false then
+      set 0 @fpknownorder
+      set 1 @fpmode
+      set 2 @numligands
+      set 3 1 !@currligand
+      set 4 @fromexp
+      set 5 @fpseed
+      set 6 @anyele
+      set 7 @runid
+      set 8 1 !@iter
+      !set 1 if not yet defined
+      set 9 false !@multseed
+      close unit 33
+      system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
+      ! for renaming 
+      open append unit 33 form name enzydock.log
+      stream @stpDIR/set_prot_patch.str
+      set fpknownorder true
+   endif
+endif
+
+! if docking to a template:
+if @{fp_docking} .eq. true then
+   if @fromexp .eq. true then
+      set 0 @fpknownorder
+      set 1 @fpmode
+      set 2 @numligands
+      set 3 1 !@currligand
+      set 4 @fromexp
+      set 5 @fpseed
+      set 6 @anyele
+      set 7 @runid
+      set 8 1 !@iter
+      !set 1 if not yet defined
+      set 9 false !@multseed
+      close unit 33
+      system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
+      open append unit 33 form name enzydock.log
+   endif
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! Gets the user bomblevel
 bomlev @bomblevel
@@ -74,7 +165,20 @@ label after_define_center
 
 ! Reads in protein pdb files, sets up disulfide bridges and 
 ! writes protein and psf files
-stream @strDIR/read_write_protein.str
+
+! Update readable log file
+!open append unit 33 form name enzydock.log
+write title unit 33
+* Processing protein files (pdb or psf+crd)
+*
+!close unit 33
+
+if @charmmgui .eq. true then
+!   stream @strDIR/read_psf_crd_protein.str
+   stream @strDIR/read_protein.str
+else
+   stream @strDIR/read_write_protein.str
+endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  SETUP END, START GRID
@@ -96,11 +200,18 @@ if @flexibledocking .eq. true then
 endif
 
 if @usegrid .eq. true then 
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* Processing grid defenitions (boundaries, flexible residue(s), cofactors, water)
+*
+!   close unit 33
    ! Calculate grid boundaries
    goto grid_boundaries
    label after_grid_boundaries
    ! Check if flexible residue(s) are within grid boundaries
    if @flexibledocking .eq. true then
+      set kbf_flag true ! Switch of restraints in back_flex.str, avoid problems with explicit water
       stream @strDIR/read_flex.str
       stream @strDIR/define_flex_ongrid.str
       goto check_flex_on_grid
@@ -108,7 +219,6 @@ if @usegrid .eq. true then
       stream @strDIR/delete_flex.str
    endif
    ! Check if cofactor(s) are within grid boundaries 
-   define cofactors sele none end
    if @numcofactor .gt. 0 then
       stream @strDIR/generate_cofactors.str
       goto check_cofac_on_grid
@@ -120,18 +230,51 @@ if @usegrid .eq. true then
    if water .eq. true then
       goto check_water_on_grid
       label after_check_water_on_grid
-      delete atoms sele segid CWAT end
+      ! delete atoms sele segid CWAT end
+      ! water inside grid were deleted, outside grid should be included in grid calc
       set water false
    endif
+   ! If explicit water requested, set up water file here
+!   if isolv .eq. true then
+!      if expl .eq. true then
+!         stream @strDIR/expl_water.str
+!      endif
+!   endif
    ! Generate grid
    if @gridone .eq. false then
+        ! Update readable log file
+!        open append unit 33 form name enzydock.log
+        write title unit 33
+* Generating grid
+*
+!        close unit 33
         stream @strDIR/generate_grid.str
     endif
-endif
 
 ! Deletes the protein, clearing the space for different
 ! computations
 ! Now that grid is created, delete protein
+if ?nres .gt. 0 then dele atom
+
+! Read in grid here for future use
+if @usegrid .eq. true then
+   if @gridon .ne. true then
+      stream @strDIR/read_grid.str
+   endif
+endif
+! If explicit water requested, set up water file here
+if isolv .eq. true then
+   if expl .eq. true then
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* Processing addition of explicit water molecules inside the grid
+*
+!      close unit 33
+      stream @strDIR/expl_water.str
+   endif
+endif
+
 if ?nres .gt. 0 then dele atom
 
 ! Reads in the restraints 
@@ -144,13 +287,60 @@ if ?nres .gt. 0 then dele atom
 
 ! This is the beginning of the reading in of the ligand for
 ! the main dynamics and docking loop
+grid off
 set gridon false
 
-set mcwriteflag true
+set mcwriteflag true   ! For now always true
+
+! RS: moved after prepare
+! Fingerprint (fp) and concensus docking
+if @{fp_docking} .eq. true then
+   ! Call to Python code goes here
+endif
+if @{cons_docking} .eq. true then
+   ! Call to Python code goes here
+endif
 
 label read_newligand
+    
+    if @{fp_docking} .eq. true then
+       set callmcs false
+       if @fpmode .eq. seed then
+          if @currligand .eq. 2 then
+             set callmcs true
+             ! will calculate for all ligands
+          endif
+       else
+          if @fpmode .eq. seq then
+             if @fromexp .eq. true then
+                set callmcs true
+             else
+                if @currligand .ne. 1 then
+                   set callmcs true
+                endif
+             endif
+          endif
+       endif
+       if @callmcs .eq. true then
+          set 0 @fpknownorder
+          set 1 @fpmode
+          set 2 @numligands
+          set 3 @currligand
+          set 4 @fromexp
+          set 5 @fpseed
+          set 6 @anyele
+          set 7 @runid
+          set 8 1 !@iter
+          !set 1 if not yet defined
+          set 9 false !@multseed ! yet to min-energy. if desired, overwrite in later staegs
+          close unit 33
+          system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
+          open append unit 33 form name enzydock.log
+       endif 
+    endif
 
     ! Reads in a new ligand
+
     bomlev -1
     open unit 101 read form name @topDIR/ligand_@currligand.str
     if ?iostat .ne. -1 then
@@ -158,9 +348,26 @@ label read_newligand
     else
       ! This is a critical warning
       echo EnzyDock WARNING: Ligand rtf/prm file not found.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: Ligand rtf/prm file not found.
+* Terminating EnzyDock run...
+*
+      close unit 33
       stop
     endif
     bomlev @bomblevel
+
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+*    >>> Start processing ligand_@currligand <<<
+*
+!    close unit 33
+
+    ! Check if ligand contains flexible rings. If not, switch off SAMD
+    if smartmc .eq. true then stream @strDIR/no_samd.str
 
     set iter 1
     set currdock 1
@@ -169,22 +376,135 @@ label read_newligand
     goto write_dat
     label after_write_dat
 
+    set match_seed_vac false
+    if @mkconfs .eq. true then
+       ! CHARMM doesn't like this construct of if-inside-if
+       !if ?nres .gt. 0 then dele atom
+       stream @strDIR/clear_all_restraints.str ! DTM
+       if ?nres .gt. 0 then
+          dele atom
+       endif
+       !stream @strDIR/clear_all_restraints.str
+       ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Producing multilpe conformations (in vacuum) of ligand_@currligand,
+*    Then clustering them by tosionals
+*
+!       close unit 33
+
+       if @multseed .eq. true then
+          if @currligand .gt. 1 then
+             set match_seed_vac true
+             ! TODO write file niters@currligand.str
+             if @{fp_docking} .eq. true then
+                if @fpmode .eq. seed then
+                   if @fromexp .eq. true then
+                      ! one pose for co-crystalized
+                      set maxit 1
+                   else
+                      ! nuber of poses for ligand 1 (seed)
+                      set pre = 1 
+                      stream nclusters@pre.str
+                      set maxit @ncluster
+                   endif
+                else
+                   ! fpmode != seed >> fpmode == seq
+                   calc pre = @currligand - 1 
+                   stream nclusters@pre.str
+                   set maxit @ncluster
+                endif
+             endif
+          else
+             ! currligand == 1
+             if @{fp_docking} .eq. true then
+                if @fromexp .eq. true then
+                   set match_seed_vac true
+                   ! one pose for co-crystalized
+                   set maxit 1
+                endif
+             endif 
+          endif
+       endif
+
+       if @{match_seed_vac} .ne. true then
+          stream ligand_mk_conformers.inp @mcwriteflag
+          stream niters@currligand.str
+       else
+          ! write niters@currligand.str
+          open write unit 44 form name niters@currligand.str
+          write title unit 44
+** Number of clusters
+**
+*set maxit = @maxit
+*
+          close unit 44
+       endif
+    endif
+
     label dock_iter
 
+       stream @strDIR/clear_all_restraints.str ! DTM
        ! DTM: Check delete command
        if ?nres .gt. 0 then dele atom
+       ! RS: clear restraints
+       !stream @strDIR/clear_all_restraints.str
 
-       ! Gets a random ligand conformer using HTMC and random rotations
-       ! mcwriteflag controls whether to write MC torsional files
-       stream ligand_simulate.inp @mcwriteflag
+       if @{match_seed_vac} .eq. true then
+          if @{fp_docking} .eq. true then
+             set 0 @fpknownorder
+             set 1 @fpmode
+             set 2 @numligands
+             set 3 @currligand
+             set 4 @fromexp
+             set 5 @fpseed
+             set 6 @anyele
+             set 7 @runid
+             set 8 @iter
+             !set 1 if not yet defined
+             set 9 @multseed 
+             close unit 33
+             system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
+             open append unit 33 form name enzydock.log
+          endif
+          set maxtrans @minmaxtrans
+          set maxrotangle @minmaxrotangle
+          stream match_seed_vac.inp @mcwriteflag
+       endif
+
+       if @mkconfs .ne. true then
+          ! Gets a random ligand conformer using HTMC and random rotations
+          ! mcwriteflag controls whether to write MC torsional files
+          ! Update readable log file
+!          open append unit 33 form name enzydock.log
+          write title unit 33
+* Creating a random conformation of ligand_@currligand
+*
+!          close unit 33
+
+          stream ligand_simulate.inp @mcwriteflag
+       endif
        set mcwriteflag false
 
        ! Docks the random ligand structure using MC and SAMD
+       ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Starting docking of conformer # @iter (out of @maxit) of ligand_@currligand
+*
+!       close unit 33
        stream dock_ligand.inp
     
        incr iter
 
     if @iter .le. @maxit goto dock_iter 
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* All produced conformers (1-@maxit) of ligand_@currligand were docked
+*
+!    close unit 33
+
 
     ! Call clustering program
     ! The file name parts her (0-3) must not be changed, they correspond to the names
@@ -198,16 +518,37 @@ label read_newligand
        set 5 @proteinunit
        ! The permutation version of cluster_ligands doesn't account for ligands covalently linked to 
        ! cofactor
+       ! Update readable log file
+!       open append unit 33 form name enzydock.log
+       write title unit 33
+* Clustering docked poses of ligand_@currligand with RMSD < @clusterwidth A
+*
+!       close unit 33
        if @{patch_lig_cofact} .eq. true then
-          system "../scripts/cluster_ligands.py @0 @1 @2 @3 @4 @5"
+          !system "../scripts/cluster_ligands.py @0 @1 @2 @3 @4 @5"
+          close unit 33
+          system "../scripts/python_wrapper.sh ../scripts/cluster_ligands.py @0 @1 @2 @3 @4 @5"
+          open append unit 33 form name enzydock.log
        else
-          system "../scripts/cluster_ligands_perm.py @0 @1 @2 @3 @4 @5"
+          !system "../scripts/cluster_ligands_perm.py @0 @1 @2 @3 @4 @5"
+          close unit 33
+          system "../scripts/python_wrapper.sh ../scripts/cluster_ligands_perm.py @0 @1 @2 @3 @4 @5"
+          open append unit 33 form name enzydock.log
        endif
+       bomlev -1
+       open unit 101 read form name @strDIR/error_cluster.str
+       if ?iostat .ne. -1 then
+          stream @strDIR/error_cluster.str
+       endif
+       bomlev @bomblevel
     endif
 
+    stream @strDIR/clear_all_restraints.str ! DTM
     ! DTM: Check delete command
     if ?nres .gt. 0 then dele atom
     ic purge 
+    ! RS: clear restraints
+    !stream @strDIR/clear_all_restraints.str
     incr currligand
     
     set mcwriteflag true
@@ -236,22 +577,49 @@ if @cluster .eq. true then
    !goto write_mm_dat
    !label after_write_mm_dat
 
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* Performing MM minimization of ligand_@currligand inside protein:
+*
+!   close unit 33
    stream mm_cluster.inp
 
    set currligand 1
 
    if isolv .eq. true then
-      if gbsw .eq. true then
-         !goto write_gbsw_dat
-         !label after_write_gbsw_dat
-         stream gbsw_cluster.inp
-         set currligand 1
-      endif
-      if pbeq .eq. true then
-         !goto write_pbeq_dat
-         !label after_write_pbeq_dat
-         stream pbeq_cluster.inp
-         set currligand 1
+      if water .eq. false then
+         if gbsw .eq. true then
+            !goto write_gbsw_dat
+            !label after_write_gbsw_dat
+!            open append unit 33 form name enzydock.log
+            write title unit 33
+* Calculating solvation energy with GBSW for ligand_@currligand:
+*
+!            close unit 33
+            stream gbsw_cluster.inp
+            set currligand 1
+         endif
+         if pbeq .eq. true then
+            !goto write_pbeq_dat
+            !label after_write_pbeq_dat
+!            open append unit 33 form name enzydock.log
+            write title unit 33
+* Calculating solvation energy with PBEQ for ligand_@currligand:
+*
+!            close unit 33
+            stream pbeq_cluster.inp
+            set currligand 1
+         endif
+      else
+         echo EnzyDock WARNING: No implicit solvent calc. done if explicit water molecules are present
+         echo Skipping gbsw or pbeq calculations
+         ! Update readable log file
+!         open append unit 33 form name enzydock.log
+         write title unit 33
+* EnzyDock WARNING: No implicit solvent calc. done if explicit water molecules are present
+*                   Skipping gbsw or pbeq calculations
+*
+!         close unit 33
       endif
    endif
 
@@ -260,27 +628,61 @@ if @cluster .eq. true then
       !goto write_qmmm_dat
       !label after_write_qmmm_dat
       ! Do a QM/MM minimization without consensus restraints
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* Performing QM/MM minimization of ligand_@currligand inside protein:
+*
+!      close unit 33
       open unit 30 read form name qmmm_cluster.inp
       stream unit 30 !qmmm_cluster.inp
    endif
 
 else
 
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* Performing MM minimization of ligand_@currligand inside protein
+*
+!   close unit 33
    stream mm.inp
 
    ! QM/MM for lowest energy ligands
    if @qmmm .eq. true then
    ! Do a QM/MM minimization without consensus restraints
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* Performing QM/MM minimization of ligand_@currligand inside protein
+*
+!      close unit 33
       open unit 30 read form name qmmm.inp
       stream unit 30 !stream qmmm.inp
    endif
 
 endif
 
+! Creat final report with final scoring
+set 0 @numligands
+set 1 @runid
+set 2 @cluster
+close unit 33
+system "../scripts/python_wrapper.sh ../scripts/mk_report.py @0 @1 @2"
+open append unit 33 form name enzydock.log
+
 !if @covalent .ne. true then stream rmsd_dock.inp   ! Only do for consensus docking
 !stream rmsd_dock.inp
 
 stream @strDIR/softlink.str 0
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Update readable log file
+!open append unit 33 form name enzydock.log
+write title unit 33
+* EnzyDock run Finished
+*
+close unit 33
 
 stop
 
@@ -313,6 +715,13 @@ label define_center
       else
         ! This is a critical warning
         echo EnzyDock WARNING: Ligand rtf/prm file not found.
+        ! Update readable log file
+!        open append unit 33 form name enzydock.log
+        write title unit 33
+* EnzyDock WARNING: Ligand rtf/prm file not found.
+* Terminating EnzyDock run...
+*
+        close unit 33
         stop
       endif
       stream @strDIR/read_ligand.str false
@@ -335,13 +744,19 @@ goto after_define_center
 label grid_boundaries
 
    ! Get extent of grid
-   calc gxmin = @bsitex - @gridsize
-   calc gymin = @bsitey - @gridsize
-   calc gzmin = @bsitez - @gridsize
-   calc gxmax = @bsitex + @gridsize
-   calc gymax = @bsitey + @gridsize
-   calc gzmax = @bsitez + @gridsize
+!   calc gxmin = @bsitex - @gridsize
+!   calc gymin = @bsitey - @gridsize
+!   calc gzmin = @bsitez - @gridsize
+!   calc gxmax = @bsitex + @gridsize
+!   calc gymax = @bsitey + @gridsize
+!   calc gzmax = @bsitez + @gridsize
 
+   calc gxmin = @bsitex - @gridsize * 0.5
+   calc gymin = @bsitey - @gridsize * 0.5
+   calc gzmin = @bsitez - @gridsize * 0.5
+   calc gxmax = @bsitex + @gridsize * 0.5
+   calc gymax = @bsitey + @gridsize * 0.5
+   calc gzmax = @bsitez + @gridsize * 0.5
 goto after_grid_boundaries
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -361,6 +776,13 @@ label check_flex_on_grid
    if ?zmax .gt. @gzmax set offgrid true
    if @offgrid .eq. true then
       echo EnzyDock WARNING: FLEXIBLE RESIDUE(S) OFF GRID. INCREASE gridsize AND RERUN.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: FLEXIBLE RESIDUE(S) OFF GRID. INCREASE gridsize AND RERUN.
+* Terminating EnzyDock run...
+*
+      close unit 33
       stop
    else
       echo EnzyDock: Flexible residues(s) within grid. 
@@ -385,7 +807,15 @@ label check_cofac_on_grid
    if ?zmax .gt. @gzmax set offgrid true
    if @offgrid .eq. true then
       echo EnzyDock WARNING: COFACTOR(S) OFF GRID. INCREASE gridsize AND RERUN.
-      stop
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: COFACTOR(S) OFF GRID. INCREASE gridsize AND RERUN.
+* Terminating EnzyDock run...
+*
+      close unit 33
+      set halfcof true
+      !stop
    else
       echo EnzyDock: Cofactor(s) within grid. 
    endif
@@ -399,7 +829,8 @@ label check_water_on_grid
 
    ! Check extent of flexible residues
    coor stat sele segid CWAT end
-
+ 
+   ! grid boundaries are defined in label grid_boundaries
    set offgrid false
    if ?xmin .lt. @gxmin set offgrid true
    if ?ymin .lt. @gymin set offgrid true
@@ -409,10 +840,88 @@ label check_water_on_grid
    if ?zmax .gt. @gzmax set offgrid true
    if @offgrid .eq. true then
       echo EnzyDock WARNING: WATER(S) OFF GRID. CHECK WATER POSITIONS.
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: WATER(S) OFF GRID. CHECK WATER POSITIONS.
+*
+!      close unit 33
    !   stop
    else
       echo EnzyDock: Water(s) within grid.
    endif
+
+   set tagwtin false
+   set tagwout false
+
+   define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
+      .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
+	  .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+	  .and. (prop z .lt. @gzmax)) @debugshow end
+   if ?nsel .gt. 0 then
+      set tagwtin true
+   else
+      set tagwout true
+      goto no_wat_in
+   endif
+
+   define watout sele (segid CWAT .and. .not. .byres. watin) @debugshow end
+   
+   if ?nsel .gt. 0 then
+      set tagwout true
+      delete atom sele (segid CWAT .and. .not. .byres. watin ) @debugshow end
+      join CWAT renum
+   endif
+
+   rename segid WTIN sele segid CWAT end
+
+! writing psf is dangerous - writes ALL existing atoms
+!   open write card unit 1 name @psfDIR/waterin.psf
+!   write psf  card unit 1 sele segid WTIN end
+!   close unit 1
+!
+!   open write card unit 1 name @crdDIR/waterin.crd
+!   write coor card unit 1 sele segid WTIN end
+!   close unit 1
+
+   open write card unit 1  name @pdbDIR/waterin.pdb
+   write coor pdb card unit 1 sele segid WTIN end
+   delete atom sele segid WTIN end
+
+   stream @strDIR/read_water.str
+   define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
+      .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
+      .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+	  .and. (prop z .lt. @gzmax)) @debugshow end
+
+   if tagwout .eq. false then
+      goto no_wat_out
+   endif
+
+   if tagwtin .eq. true then
+      delete atom sele .byres. watin @debugshow end
+      join CWAT renum
+   endif   
+
+   label no_wat_in
+
+   rename segid WOUT sele segid CWAT end
+
+! writing psf is dangerous - writes ALL existing atoms
+!   open write card unit 1 name @psfDIR/waterout.psf
+!   write psf  card unit 1 sele segid WOUT end
+!   close unit 1
+!
+!   open write card unit 1 name @crdDIR/waterout.crd
+!   write coor card unit 1 sele segid WOUT end
+!   close unit 1
+
+   open write card unit 1  name @pdbDIR/waterout.pdb
+   write coor pdb card unit 1 sele segid WOUT end
+   !delete atom sele segid WOUT end
+   ! RS: Don't dele so WOUT will be part of the grid
+   
+   label no_wat_out
 
 goto after_check_water_on_grid
 

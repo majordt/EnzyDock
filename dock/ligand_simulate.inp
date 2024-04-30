@@ -12,6 +12,10 @@
 bomlev -1
 stream @strDIR/read_ligand.str @in1
 bomlev @bomblevel
+!RS: stream check if number of atom differs between ligands
+if @iter .eq. 1 then
+   stream @strDIR/check_natoms.str
+endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  END SETUP
@@ -20,19 +24,21 @@ bomlev @bomblevel
 ! First do some random rotation
 define ligand sele segi ligand_@currligand end
 coor stat mass sele ligand end
-calc phi = ?rand * @maxrotangle !* 0.1
-calc xrot = ?rand
-calc yrot = ?rand
-calc zrot = ?rand
-calc xxcen = ?xave
-calc yycen = ?yave
-calc zzcen = ?zave
+! RS: rotation added in dock_ligand.inp
+!calc phi = ?rand * @maxrotangle !* 0.1
+!calc xrot = ?rand
+!calc yrot = ?rand
+!calc zrot = ?rand
+!calc xxcen = ?xave
+!calc yycen = ?yave
+!calc zzcen = ?zave
 
-coor rotate xdir @xrot ydir @yrot zdir @zrot -
-     xcen @xxcen ycen @yycen zcen @zzcen phi @phi -
-     select ligand end
+!coor rotate xdir @xrot ydir @yrot zdir @zrot -
+!     xcen @xxcen ycen @yycen zcen @zzcen phi @phi -
+!     select ligand end
 
-if @maxit .eq. 0 goto ligand_minimize
+!if @maxit .eq. 0 goto ligand_minimize
+if @maxit .le. 0 goto ligand_minimize
 if @ligmcflag .ne. true goto ligand_minimize
 
 ! Switch off covalent flag at this stage (reset later below)
@@ -50,7 +56,7 @@ set nsavc    0
 stream @strDIR/seed.str
 
 set idomcfrq 5
-if @idomcfrq .gt. @steps then
+if @idomcfrq .gt. @ligmcsteps then
    set idomcfrq 1
 endif
 
@@ -67,13 +73,17 @@ mc temperature @temp nsteps @ligmcsteps -
    idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
    iuncrd @iuncrd nsavc @nsavc
 
-stream @strDIR/mc/mc_delete.str
+!stream @strDIR/mc/mc_delete.str
 
-if @cflag .eq. true set covalent true
+!if @cflag .eq. true set covalent true
 
 goto ligand_minimize
 
 label after_ligand_minimize
+
+stream @strDIR/mc/mc_delete.str
+
+if @cflag .eq. true set covalent true
 
 return
 

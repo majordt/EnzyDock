@@ -39,7 +39,7 @@ label pbeq_loop
    read coor card unit 1 !offset @NumObject
    close unit 1
 
-   define QMS sele segid ligand_@currligand show end
+   define QMS sele segid ligand_@currligand @debugshow end
 
    if @flexibledocking .eq. true then
       define flex sele none end
@@ -48,7 +48,7 @@ label pbeq_loop
          if @numflex@@b .lt. 1 goto skip_define_pbeqflex_loop1
          set c 1
          label define_pbeqflex_loop2
-            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) @debugshow end
             incr c
          if c .le. @numflex@@b goto define_pbeqflex_loop2
          label skip_define_pbeqflex_loop1
@@ -56,31 +56,36 @@ label pbeq_loop
       if b .le. @proteinunit goto define_pbeqflex_loop1
 
       if @flexibledocking .eq. true then
-         define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) show end
+         !define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
+         !        .or. type HN .or. type HA .or. type HA2) @debugshow end
+         !RS
+         define back sele segi pep* .and. (type N .or. type C .or. type O .or. type CA -
+                 .or. type HN .or. type HA .or. type HA2) @debugshow end
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
-         define flexx sele flex .and. .not. back show end
+         define flexx sele flex .and. .not. back @debugshow end
          ! Backbone atoms are not flexible unless specifically defined as flexible
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
       endif
 
       ! If backbone atoms are flexible
       if flexibleback .eq. true then
-         open unit 31 read form name @strDIR/back_flex.str
+         !open unit 31 read form name @strDIR/back_flex.str
+         ! RS:
+         open unit 31 read form name @strDIR/back_flex_ng.str
          stream unit 31
          !stream @strDIR/back_flex.str
          define back sele back .and. .not. fback end
       endif
 
       ! Define flexible region
-      define flexx sele flex .and. .not. back show end
+      define flexx sele flex .and. .not. back @debugshow end
 
    endif
-   define ligand sele segid ligand_@currligand show end
+   define ligand sele segid ligand_@currligand @debugshow end
    set c 1
    define cofactors sele none end
    label read_qcofactors
-      define cofactors sele cofactors .or. segi COF@c show end
+      define cofactors sele cofactors .or. segi COF@c @debugshow end
       incr c
    if c .le. @numcofactor goto read_qcofactors
 
@@ -103,15 +108,24 @@ label pbeq_loop
 
      ! Release fix as fix influences the nbonded list (fix info is stored in psf file after mass column)
      cons fix sele none end
-
+     ! Update readable log file
+!     open append unit 33 form name enzydock.log
+     write title unit 33
+* Calculating solvation energy with PBEQ of cluster # @iter (out of @ncluster)
+*    of ligand_@currligand inside protein
+*
+!     close unit 33
      stream @strDIR/usepbeq.str
 
      if missingradius .eq. true goto pbeq_error
      set missingradius false
 
+!     stream @strDIR/clear_all_restraints.str
 !     if @minradius .gt. 0.0 then
-!        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
-!        cons fix sele .not. flexradius end
+!        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) @debugshow end
+!        if ?nsel .gt. 0 then
+!           cons fix sele .not. flexradius end
+!        endif
 !     endif
 !     mini abnr nstep 100
 !     cons fix sele none end
@@ -123,7 +137,7 @@ label pbeq_loop
 !     set gbswtot ?ener
 
      open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.crd
-     write coor card unit 1 sele QMS show end
+     write coor card unit 1 sele QMS @debugshow end
      *  dener: Electrostatic solvation energy difference (P+L-->PL)
      *  dener80: PL interaction energy in water  
      *  dener1: PL interaction energy in vacuum
@@ -136,7 +150,7 @@ label pbeq_loop
      *
 
      open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.pdb
-     write coor pdb unit 1 sele QMS show end
+     write coor pdb unit 1 sele QMS @debugshow end
      *  dener: Electrostatic solvation energy difference (P+L-->PL)
      *  dener80: PL interaction energy in water
      *  dener1: PL interaction energy in vacuum
@@ -164,15 +178,15 @@ label pbeq_loop
 
         if @numcofactor .gt. 0 then
            open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.crd
-           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
+           write coor card unit 1 sele ligand .or. cofactors .or. flex @debugshow end
 
            open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex @debugshow end
            close unit 1
         endif
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele QMS .or. flex show end
+        write coor card unit 1 sele QMS .or. flex @debugshow end
         *  dener: Electrostatic solvation energy difference (P+L-->PL)
         *  dener80: PL interaction energy in water
         *  dener1: PL interaction energy in vacuum
@@ -185,7 +199,7 @@ label pbeq_loop
         *
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele QMS .or. flex show end
+        write coor pdb unit 1 sele QMS .or. flex @debugshow end
         *  dener: Electrostatic solvation energy difference (P+L-->PL)
         *  dener80: PL interaction energy in water
         *  dener1: PL interaction energy in vacuum
@@ -199,20 +213,20 @@ label pbeq_loop
         close unit 1
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele flex show end
+        write coor card unit 1 sele flex @debugshow end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele flex show end
+        write coor pdb unit 1 sele flex @debugshow end
         close unit 1
 
      endif
 
      if @numcofactor .gt. 0 then
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele ligand .or. cofactors show end
+        write coor card unit 1 sele ligand .or. cofactors @debugshow end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele ligand .or. cofactors show end
+        write coor pdb unit 1 sele ligand .or. cofactors @debugshow end
         close unit 1
      endif
 
@@ -255,6 +269,13 @@ goto after_write_pbeq_dat
 label pbeq_error
    echo EnzyDock WARNING: Missing parameters for PBEQ... skipping
    echo Check file @strDIR/pbeq/radius_pbeq.str
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: Missing parameters for PBEQ... skipping
+*                   Check file @strDIR/pbeq/radius_pbeq.str
+*
+!   close unit 33
 return
 
 

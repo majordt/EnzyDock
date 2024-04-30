@@ -1,0 +1,325 @@
+***********************************************************
+*             Start ligand_mk_conformers.inp
+***********************************************************
+* Simulate ligands using MDSA and MCSA
+* Based on Dan's mc_lig_coor.inp and ligand_simulate.inp
+* merged RS 27/01/2022
+* (Usage (i is iteration 1, ..., N):)
+* (charmm i=1 currligand=1 path=path_a < mc_lig_coor.inp > mc_lig_coor.out &)
+*
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  START SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Reduce bomblevel to allow reading of propyl ring
+bomlev -1
+
+stream @strDIR/read_ligand.str @in1
+bomlev @bomblevel
+
+!RS: Check if number of atom differs between ligands. Only relevant for qmmm
+!if @iter .eq. 1 then
+stream @strDIR/check_natoms.str
+!endif
+
+!if @maxit .eq. 0 goto vac_ligand_minimize
+if @maxit .le. 0 goto vac_ligand_minimize
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!                  END SETUP
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+set iuncrd -11
+set nsavc    0
+
+set idomcfrq 5
+if @idomcfrq .gt. @ligmcsteps then
+   set idomcfrq 1
+endif
+
+nbonds cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswi swit eps @ligeps @ligdielec
+
+calc frq @ligmdsteps/10
+calc frq2 10*@frq
+
+if @silent .eq. true then
+!  RS: not silent, may interfere with the calculation
+!  set frq @ligmdsteps
+!  set frq2 @ligmdsteps
+  set sillev 1
+else
+  set sillev 5 ! regular prnlev
+endif
+
+set htfreq 50
+calc md_dtemp (@maxligmdtemp - @minligmdtemp)/@ligmdycles
+calc mc_dtemp (@maxligmctemp - @minligmctemp)/@ligmcycles
+
+! Switch off covalent flag at this stage (reset later below)
+set cflag false
+if @covalent .eq. true set cflag true
+set covalent false
+
+! RS: debug
+if @debug .eq. true then
+   print cons
+endif
+! minimize, save structure as starting point
+! RS: comp array is written when dyna exits (see charmm docs).
+! Consider using scalar arrays 1-3 for xyz or second comp array
+mini abnr nstep 100
+define ligand sele segid ligand_@currligand @debugshow end
+open write unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
+write coor unit 1 card
+* CHARMM Energy = ?ener kcal/mol
+*
+
+open unit 1 form write name @pdbDIR/@currligand_@runid_min_0_0.pdb
+write coor pdb unit 1
+* CHARMM Energy = ?ener kcal/mol
+*
+
+close unit 1
+
+open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
+write psf card unit 1
+close unit 1
+
+
+set conf 1
+stream @strDIR/mc/mc_add.str
+
+! RS shake
+shake bond para tol 1.0e-9  sele hydrogen end -
+sele ( .not. hydrogen ) end
+
+label get_conformer
+   
+   ! read minimized starting point
+   open read unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
+   read coor unit 1 card
+   close unit 1
+   define ligand sele segid ligand_@currligand @debugshow end
+   
+   stream @strDIR/seed.str
+   
+   set vacsamd false
+   if @samd .eq. true set vacsamd true
+   if @ntors .eq. 0 set vacsamd true
+      
+   if @vacsamd .eq. true then
+      ! Heating
+      set mdtemp0 @minligmdtemp
+      label vac_md_heat
+
+!         ! RS shake
+!         shake bond para tol 1.0e-9  sele hydrogen end -
+!         sele ( .not. hydrogen ) end
+
+         prnlev @sillev
+         dynamics leap start timestep @ligtimestep -
+            nstep @ligmdsteps nprint @frq2 iprfrq @frq -
+            firstt @mdtemp0 finalt @mdtemp0 teminc 0.0 ihtfrq @htfreq ieqfrq @htfreq -
+            ichecw 1 twindl -10.0 twindh 10.0 -
+            iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+            iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+            inbfrq 0 ilbfrq 0  - ! Updates not needed
+            echeck 5000000.0
+         prnlev 5
+     
+!         ! RS shake
+!         shake off
+ 
+         incr mdtemp0 by @{md_dtemp}
+   
+      if mdtemp0 .le. @maxligmdtemp goto vac_md_heat
+   
+      ! Cooling
+      set mdtemp0 @maxligmdtemp
+      label vac_md_cool
+   
+!         ! RS shake
+!         shake bond para tol 1.0e-9  sele hydrogen end -
+!         sele ( .not. hydrogen ) end
+
+         prnlev @sillev
+         dynamics leap start timestep @ligtimestep -
+            nstep @ligmdsteps nprint @frq2 iprfrq @frq -
+            firstt @mdtemp0 finalt @mdtemp0 teminc 0.0 ihtfrq @htfreq ieqfrq @htfreq -
+            ichecw 1 twindl -10.0 twindh 10.0 -
+            iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+            iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+            inbfrq 0 ilbfrq 0  - ! Updates not needed
+            echeck 5000000.0
+         prnlev 5
+
+!         ! RS shake
+!         shake off
+   
+         decr mdtemp0 by @{md_dtemp}
+   
+      if mdtemp0 .ge. @minligmdtemp goto vac_md_cool
+
+      ! End of MD simulated annealing
+   endif 
+   if @ntors .eq. 0 goto write_mdmc_min
+   ! RS: needed?
+   !if @ligmcflag .ne. true goto write_mdmc_min
+
+   mini abnr nstep 100
+   ! skip MC SA if no torsions were found   
+
+   !set maxligmctemp  600.0  ! High MC docking (in annealing)
+   !set minligmctemp  100.0  ! Low MC temperature (in annealing)
+   !set ligmcycles      5  ! Number of annealing heating and cooling steps
+   
+   ! Do MC simulated annealing
+! RS: label not in use in original script
+!   label mcsa
+   
+      !calc mc_dtemp (@maxligmctemp - @minligmctemp)/@ligmcycles
+   
+      ! Heating
+      set mctemp0 @minligmctemp
+      label vac_mc_heat
+   
+         mc temperature @mctemp0 nsteps @ligmcsteps -
+            iseed @seed1 @seed2 @seed3 @seed4 -
+            idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+            iuncrd @iuncrd nsavc @nsavc
+   
+         incr mctemp0 by @{mc_dtemp}
+   
+      if mctemp0 .le. @maxligmctemp goto vac_mc_heat
+   
+      ! Cooling
+      set mctemp0 @maxligmctemp
+      label vac_mc_cool
+   
+         mc temperature @mctemp0 nsteps @ligmcsteps -
+            iseed @seed1 @seed2 @seed3 @seed4 -
+            idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+            iuncrd @iuncrd nsavc @nsavc
+   
+         decr mctemp0 by @{mc_dtemp}
+   
+      if mctemp0 .ge. @minligmctemp goto vac_mc_cool
+   
+   ! End of MC simulated annealing
+   
+   label write_mdmc_min
+
+!   stream @strDIR/mc/mc_delete.str
+   mini abnr nstep @mstep nprint @mprint
+
+
+   ! RS: output names and locations should match enzydock conventions only after clustering  
+   ! the name here should match consecutive python script for clustering
+   !open write unit 1 form name @pdbDIR/ies_@{path}_ligand_@{currligand}_mdmc_min_@{conf}.pdb
+   !write coor pdb unit 1
+   !* CHARMM Energy = ?ener kcal/mol
+   !*
+   !close unit 1
+   
+   open unit 1 form write name @pdbDIR/@currligand_@runid_mdmc_min_@conf_0.pdb
+   write coor pdb unit 1
+   * CHARMM Energy = ?ener kcal/mol
+   *
+   close unit 1
+
+   open write unit 1 card name @pdbDIR/@currligand_@runid_mdmc_min_@conf_0.crd
+   write coor unit 1 card
+   * CHARMM Energy = ?ener kcal/mol
+   *
+
+   incr conf
+
+if @conf .le. @maxconf goto get_conformer
+!if @cflag .eq. true set covalent true
+
+! RS shake
+shake off
+
+!stream @strDIR/mc/mc_delete.str
+
+! Call clustering program
+! The file name parts here (0-3) must not be changed, they correspond to the names
+! used in dock_ligand.inp
+! Clustering program copies the minimun energy file to results directory and rename it
+
+! superpose_cluster_ligands.py 1 abyu 100 1.0
+set 0 @currligand
+set 1 @runid
+set 2 @maxconf
+set 3 @vacclusterwidth
+
+! The permutation version of cluster_ligands doesn't account for ligands covalently linked to
+! cofactor
+!if @{patch_lig_cofact} .eq. true then
+   !system "../scripts/superpose_cluster_ligands.py @0 @1 @2 @3"
+close unit 33
+system "../scripts/python_wrapper.sh ../scripts/superpose_cluster_ligands.py @0 @1 @2 @3"
+open append unit 33 form name enzydock.log
+
+bomlev -1
+open unit 101 read form name @strDIR/error_cluster.str
+if ?iostat .ne. -1 then
+   stream @strDIR/error_restraints.str
+endif
+bomlev @bomblevel
+
+!else
+!   system "../scripts/cluster_ligands_perm.py @0 @1 @2 @3 @4 @5"
+!endif
+
+label after_vac_ligand_minimize
+
+stream @strDIR/mc/mc_delete.str
+
+if @cflag .eq. true set covalent true
+
+return
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+label vac_ligand_minimize
+
+    nbonds cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswitch switch eps @ligeps @ligdielec
+    mini abnr nstep @mstep nprint @mprint
+
+    open unit 1 form write name @resDIR/@currligand_@runid_@iter_0.pdb
+    write coor pdb unit 1
+    close unit 1
+
+    if iter .eq. 1 then
+       open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
+       write psf card unit 1
+       close unit 1
+    endif
+
+    open write unit 1 card name @resDIR/@currligand_@runid_@iter_0.crd
+    write coor unit 1 card
+    close unit 1
+
+goto after_vac_ligand_minimize
+
+! python for scope
+!vars = ["ctfnb", "ctnb", "ctonb",
+!        "dielec", "eps", "maxconf", "vacclusterwidth"
+!        "mchtemp", "mcltemp", "mcsteps", "mcycles",
+!        "mdhtemp", "mdltemp", "mdsteps", "mdycles"]
+!
+!d = {"ctfnb":"998.0", "ctnb":"999.0", "ctonb":"996.0",
+!     "dielec":"cdie", "eps":"1.0", "maxconf":"100",
+!     "vacclusterwidth":"1.0",
+!     "mchtemp":"600.0", "mcltemp":"100.0",
+!     "mcsteps":"10000", "mcycles":"5",
+!     "mdhtemp":"800.0", "mdltemp":"300.0",
+!     "mdsteps":"10000", "mdycles":"5"}
+!
+!for v in vars:
+!    print("if @?"+v+" .ne. 0 then\nset org"+v+" @"+v+"\nendif")
+!    print("set "+v+" "+d[v])
+!print()
+!for v in vars:
+!    print("if @?org"+v+" .ne. 0 then\nset "+v+" @org"+v+"\nendif")
+!
