@@ -1,7 +1,14 @@
-#!/home/qnt/majort/anaconda3/bin/python3.6
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+# Copyright © 2022 Dan T. Major
 
 import sys
 import os
+
+def write_header():
+    print("\nGet QM atom types program for EnzyDock\nCopyright © 2022 Dan T. Major\n")
+
+def write_footer():
+    print("\nEnd QM atom types program, returning to EnzyDock main\n")
 
 def get_qm_atom_type():
     input_arg = sys.argv
@@ -29,6 +36,7 @@ set qmligl ''')
     print(atom_type, file = str_file)
 
 def main():
+    write_header()
     atom_type, status = get_qm_atom_type()
     if os.path.exists('../local_top/qm_atom_type.str'):
        os.remove('../local_top/qm_atom_type.str')
@@ -36,6 +44,7 @@ def main():
        file = open('../local_top/qm_atom_type.str', 'w')
        write_str_file(file, atom_type)
        file.close()
+    write_footer()
 
 if __name__ == "__main__":
     main()

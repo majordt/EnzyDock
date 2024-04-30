@@ -1,9 +1,14 @@
-#!/home/qnt/majort/anaconda3/bin/python3.6
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+# Write input for Q-Chem for use with CHARMM
+# Copyright © 2022 Dan T. Major
 
 import sys
 
 def write_header():
     print("\nQ-Chem input writer program for EnzyDock\nCopyright © 2020 Dan T. Major\n")
+
+def write_footer():
+    print("\nEnd Q-Chem input writer program, returning to EnzyDock main\n")
 
 def write_file1(file, qm_charge):
     file.write(
@@ -74,6 +79,7 @@ def main():
     write_file1(file, qm_charge)
     file = open(file2,"w")
     write_file2(file, qm_charge)
+    write_footer()
 
 if __name__ == "__main__":
     main()

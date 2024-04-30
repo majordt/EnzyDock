@@ -1,8 +1,7 @@
-#!/home/qnt/majort/anaconda3/bin/python3.6
-##!/usr/bin/env python
-## coding: utf-8
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Original version written by DTM 2020
 # Permutations included by RS 03/2021
+# Copyright © 2022 Dan T. Major
 
 import copy
 import math
@@ -39,6 +38,12 @@ For verbose mode (print used permutations):
 
 
 sys.path.append(".")
+
+def write_header():
+    print("\nRMSD program for EnzyDock\nCopyright © 2022 Dan T. Major\n")
+
+def write_footer():
+    print("\nEnd RMSD program, returning to EnzyDock main\n")
 
 def handle_input():
     # Handle input arguments and return values
@@ -209,8 +214,13 @@ def find_approved_permutations(molecule, primary_permutations_dict):
 def get_poses(pose1_pdb, pose2_pdb):
     # read pdb files and make sure they contain the same molecule
     poses = []
-    poses += [ Chem.MolFromPDBFile(pose1_pdb) ]
-    poses += [ Chem.MolFromPDBFile(pose2_pdb) ]
+    mol_tmp1 = Chem.MolFromPDBFile(pose1_pdb)
+    mol_tmp2 = Chem.MolFromPDBFile(pose2_pdb)
+    if ((mol_tmp1 != None) and (mol_tmp2 != None)):
+       poses += [ Chem.MolFromPDBFile(pose1_pdb) ]
+       poses += [ Chem.MolFromPDBFile(pose2_pdb) ]
+    else:
+       print("Warning: Problems with molecules %s %s ... " % (pose1_pdb, pose2_pdb))
     #validation
     if not(Chem.MolToSmiles(poses[0]) == Chem.MolToSmiles(poses[1])):
         print("Warning: Poses of different molecules:\n", Chem.MolToSmiles(poses[0]), "\n",
@@ -274,6 +284,7 @@ def get_rmsd_dict(mol1, mol2, permutation):
 
 
 def main():
+    write_header()
     pose1_pdb, pose2_pdb, verbose = handle_input()
     #read in structures
     poses = get_poses(pose1_pdb, pose2_pdb)
@@ -289,6 +300,7 @@ def main():
     print("rmsd without permutations: %.3f" % (rmsd_no_permutation))
     rmsd_with_permutation = opt_rmsd(poses[0], poses[1], approved_permutations_dict, verbose)
     print("rmsd with    permutations: %.3f" % (rmsd_with_permutation))
+    write_footer()
 
 if __name__ == "__main__":
     main()

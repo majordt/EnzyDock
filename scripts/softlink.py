@@ -1,8 +1,12 @@
-#!/home/qnt/majort/anaconda3/bin/python3.6
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+# Create softlinks to allow long file names with CHARMM
+# Copyright © 2022 Dan T. Major
 
 import sys
 import os
 from os import path
+
+print("\nSoft-link program for EnzyDock\nCopyright © 2022 Dan T. Major\n")
 
 # Handle inpit arguments
 input_arg = sys.argv
@@ -24,4 +28,6 @@ elif (arg3 == 0):
 
 print(command)
 os.system(command)
+
+print("\nEnd soft-link program, returning to EnzyDock main\n")
 

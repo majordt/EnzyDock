@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/csh
 
 # Write-protect all main EnzyDock files, so that they can't be changed during run
 chmod -w ../crd/expl_sphere.crd \
@@ -22,7 +22,6 @@ rmsd_dock.inp \
 ../local_top/top_all36_cgenff.rtf \
 ../local_top/top_all36_prot.rtf \
 ../local_top/toppar_water_ions.str \
-../scripts/0README \
 ../scripts/calc_rmsd_perm.py \
 ../scripts/cluster_ligands.py \
 ../scripts/cluster_ligands_perm.py \
@@ -31,10 +30,8 @@ rmsd_dock.inp \
 ../scripts/files_lock.csh \
 ../scripts/files_lock.sh \
 ../scripts/get_qm_atom_type.py \
-../scripts/mk_report.py \
 ../scripts/pdb_reader.py \
 ../scripts/prepare.py \
-../scripts/proc_noes.py \
 ../scripts/python_wrapper.sh \
 ../scripts/read_write_pdb.py \
 ../scripts/ring_aromatic.py \
@@ -68,7 +65,6 @@ rmsd_dock.inp \
 ../stream/mc_trot.str \
 ../stream/mc/mc_sidechains.str \
 ../stream/mc/mc_sidechains_delete.str \
-../stream/mk_userrestraints.str \
 ../stream/no_samd.str \
 ../stream/param.str \
 ../stream/param_set_check.str \
@@ -78,7 +74,6 @@ rmsd_dock.inp \
 ../stream/read_grid.str \
 ../stream/read_ligand.str \
 ../stream/read_protein.str \
-../stream/read_psf_crd_protein.str \
 ../stream/read_water_expl.str \
 ../stream/read_water_in.str \
 ../stream/read_water_out.str \
@@ -96,12 +91,10 @@ rmsd_dock.inp \
 ../stream/write_flex.str \
 ../stream/zero_consensus_docking.str \
 ../stream/consdef/consensus_def.str \
-../stream/consdef/fp_def.str \
+../stream/consdef/userrestraints.str \
 ../stream/gbsw/radius_gbsw.str \
 ../stream/patching/cov_patch_g.str \
 ../stream/patching/cov_patch_ng.str \
 ../stream/patching/set_prot_patch.str \
 ../stream/pbeq/radius_pbeq.str
 
-# so that csv file can overwrite it
-chmod u+w ../stream/consdef/userrestraints.str

@@ -1,8 +1,14 @@
-#!/home/qnt/majort/anaconda3/bin/python3.6
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Initial version taken from CHARMM-GUI tutorial
+# Copyright © 2022 Dan T. Major
 
 class Atom:
-    def __init__(self, line):
+    def __init__(self, line=None):
+#        print('line=',line)
+#        if line is None:
+#           line = "0"*80 + "\n"   # If no file being read, initialize empty line
+#           print(line)
+#        print(type(line))
         self.serial = int(line[6:11])
         self.name = line[11:16].strip()
         self.altLoc = line[16:17].strip()
@@ -13,8 +19,8 @@ class Atom:
         self.x = float(line[30:38])
         self.y = float(line[38:46])
         self.z = float(line[46:54])
-        self.occupancy = line[54:60].strip()
-        self.tempFactor = line[60:66].strip()
+        self.occupancy = float(line[54:60]) #.strip())
+        self.tempFactor = float(line[60:66]) #.strip())
         self.segID = line[72:76].strip()
         self.element = line[76:78].strip()
         self.charge = line[78:80].strip()
@@ -24,16 +30,44 @@ class Atom:
     def __getitem__(self, key):
         return self.__dict__[key]
 
+class Atom2:
+    def __init__(self, serial=None, name=None, altLoc=None, resName=None, \
+                       chainID=None, resSeq=None, iCode=None, \
+                       x=None, y=None, z=None, \
+                       occupancy=None, tempFactor=None, \
+                       segID=None, element=None, charge=None):
+        self.serial = -1 if serial is None else serial
+        self.name = "XXXX" if name is None else name
+        self.altLoc = "" if altLoc is None else altLoc
+        self.resName = "XXX" if resName is None else resName
+        self.chainID = "A" if chainID is None else chainID
+        self.resSeq = -1 if resSeq is None else resSeq
+        self.iCode = "" if iCode is None else iCode
+        self.x = 0.0 if x is None else x
+        self.y = 0.0 if y is None else y
+        self.z = 0.0 if z is None else z
+        self.occupancy = 0.0 if occupancy is None else occupancy
+        self.tempFactor = 0.0 if tempFactor is None else tempFactor
+        self.segID = "" if segID is None else segID
+        self.element = "Z" if element is None else element
+        self.charge = "" if charge is None else charge
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
 class Remark:
     def __init__(self, line):
         self.remark = line.strip()
 
 class PDB:
-    def __init__(self, file1, file2):
-        self.file = file1
+    def __init__(self, file1=None, file2=None):
         self.atoms = []
         self.remarks = []
-        self.parse()
+        if file1 is not None:
+           self.file = file1
+           self.parse()
+        else:
+           self.file = None
 
     def parse(self):
         MODEL = None
@@ -57,6 +91,15 @@ class PDB:
         if to_dict: return [x.__dict__ for x in self.atoms]
         else: return self.atoms
 
+    def add_atoms(self, serial=None, name=None, altLoc=None, resName=None, \
+                       chainID=None, resSeq=None, iCode=None, \
+                       x=None, y=None, z=None, \
+                       occupancy=None, tempFactor=None, \
+                       segID=None, element=None, charge=None):
+        """Add atoms (use when not reading from PDB file)"""
+        atom = Atom2(serial, name, altLoc, resName, chainID, resSeq, iCode, x, y, z, occupancy, tempFactor, segID, element, charge)
+        self.atoms.append(atom)
+
     def get_model(self, model_num, to_dict=True):
         """Return all atoms where MODEL == model_num"""
         model_atoms = [x for x in self.atoms if x.MODEL == model_num]
@@ -71,16 +114,25 @@ class PDB:
 
     def write_pdb(self, file2):
        self.file = file2
-       f = open(self.file, 'w')
+       try:
+          f = open(self.file, 'w')
+       except:
+          print("WARNING: PDB file not found")
        line = []
        for remark in self.remarks:
            print(remark.remark, file = f)
        field = 'ATOM'
        i = 1
        for atom in self.atoms:
-           line = "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}"\
-                  .format(field,atom.serial,atom.name,atom.altLoc,atom.resName,atom.chainID,atom.resSeq,atom.iCode,
-                          atom.x,atom.y,atom.z,atom.occupancy,atom.tempFactor,atom.element,atom.charge)
+           if len(atom.resName) <= 3:
+              line = "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}"\
+                     .format(field,atom.serial,atom.name,atom.altLoc,atom.resName,atom.chainID,atom.resSeq,atom.iCode,
+                             atom.x,atom.y,atom.z,atom.occupancy,atom.tempFactor,atom.element,atom.charge)
+           else:
+              # Allow for TIP3
+              line = "{:6s}{:5d} {:>4s}{:1s}{:4s}{:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}"\
+                     .format(field,atom.serial,atom.name,atom.altLoc,atom.resName,atom.chainID,atom.resSeq,atom.iCode,
+                             atom.x,atom.y,atom.z,atom.occupancy,atom.tempFactor,atom.element,atom.charge)
            # CHARMM style
            #line = "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}{:2s}"\
            #       .format(field,atom.serial,atom.name,atom.altLoc,atom.resName,atom.chainID,atom.resSeq,atom.iCode,
