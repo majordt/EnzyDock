@@ -4,8 +4,8 @@ EnzyDock qm/mm simulations
 $end
 
 $rem
-exchange              m062x
-basis                 gen
+method                hf3c
+basis                 minix
 print_general_basis   true
 qm_mm                 true
 jobtype               force
@@ -16,41 +16,8 @@ scf_guess             read
 max_scf_cycles        1000
 thresh                8
 scf_convergence       5
-incdft                false
-xc_grid               2 
-$end
-
-$basis
-h
-3-21g
-****
-c
-3-21g
-****
-n
-3-21g
-****
-o
-3-21+g
-****
-f
-3-21g
-****
-p
-3-21g*
-****
-s
-3-21+g*
-****
-cl
-3-21+g*
-****
-br
-3-21+g
-****
 $end
 
 $molecule
 0  1
 $end
-
