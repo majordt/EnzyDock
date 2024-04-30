@@ -6,32 +6,56 @@
 * Also, these may be combined into global moves (see 'move link' below).
 *
 
-! Weights are chosen such that each degree of freedom has roughly equal
+! Weights are chosen such that each degree of freedom has roughly equal 
 ! frequency of being chosen.
 ! Rigid body translations of ligand
-!move add mvtp rtrn byresidue weight 1.00 dmax 0.10 label atrn sele segid ligand_@currligand end
+!move add mvtp rtrn byresidue weight 1.00 dmax 0.10 label atrn sele segid ligand_@currligand end 
 
 ! Rigid body rotations of ligand
-!move add mvtp rrot byresidue weight 1.00 dmax 25.0 label arot sele atom ligand_@currligand 1 C25 end
+!move add mvtp rrot byresidue weight 1.00 dmax 25.0 label arot sele atom ligand_@currligand 1 C25 end 
 
 ! Torsional rotations in ligand. Lines below first must be modified manually.
-! Note that in the torsional definition there is DIRECTIONALITY!! The MC module will move the atoms after
-! the second atom in the definition. The MC module doesn't care about which atoms are fixed.
-! So, if we have a covalently docked ligand via a Cys-S-C-…-X-Y-Z-W-… link, all MC moves MUST be defined
-! "outwards" and "away" from the Cys residue. Otherwise, the MC module will move the Cys residue itself!!!
-! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y show end -
-!                                                              sele atom ligand_@currligand 1 Z show end
+! Note that in the torsional definition there is DIRECTIONALITY!! The MC module will move the atoms after 
+! the second atom in the definition. The MC module doesn't care about which atoms are fixed.
+! So, if we have a covalently docked ligand via a Cys-S-C-…-X-Y-Z-W-… link, all MC moves MUST be defined 
+! "outwards" and "away" from the Cys residue. Otherwise, the MC module will move the Cys residue itself!!!
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y  @debugshow end -
+!                                                              sele atom ligand_@currligand 1 Z  @debugshow end
+set ntors 0
+
 if covalent .eq. true then
- move add mvtp tors weight 1.00 dmax 180.0 label tr1  fewer 0 sele atom FLX1 1 @protlink0 show end -
-                                                              sele atom FLX1 1 @protlink1 show end
- move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom FLX1 1 @protlink1 show end -
-                                                              sele atom ligand_@currligand 1 @liglink1 show end
+! move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink0 @debugshow end -
+!                                                              sele atom FLX@{covseg} 1 @protlink1 @debugshow end
+! move add mvtp tors weight 2.00 dmax 180.0 label tr2  fewer 0 sele atom FLX@{covseg} 1 @protlink1 @debugshow end -
+
+ move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink1 @debugshow end -
+                                                              sele atom ligand_@currligand 1 @liglink1 @debugshow end
+! incr ntors by 2
+ incr ntors by 1
 endif
+
 ! Additional torsional definitions below
-! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... show end sele ... show end
+!! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... @debugshow end sele ... @debugshow end
+
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... @debugshow end sele ... @debugshow end
+move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele atom ligand_@currligand 1  S02 @debugshow end -
+                                                            sele atom ligand_@currligand 1  N05 @debugshow end
+move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele atom ligand_@currligand 1  N05 @debugshow end -
+                                                            sele atom ligand_@currligand 1  C06 @debugshow end
+move add mvtp tors weight 1.00 dmax 180.0 label tr4 fewer 0 sele atom ligand_@currligand 1  C06 @debugshow end -
+                                                            sele atom ligand_@currligand 1  C07 @debugshow end
+move add mvtp tors weight 1.00 dmax 180.0 label tr5 fewer 0 sele atom ligand_@currligand 1  C07 @debugshow end -
+                                                            sele atom ligand_@currligand 1  C08 @debugshow end
+
+incr ntors by 4
+
+if smartmc .eq. true then
+   move link lab1 tr2 lab2 tr3
+   move link lab1 tr3 lab2 tr4
+   move link lab1 tr4 lab2 tr5
+endif
 
 ! Link moves so they are done together.
 !move link lab1 tr1 lab2 tr2 
 
 return
-

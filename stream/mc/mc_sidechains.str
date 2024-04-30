@@ -19,37 +19,47 @@ label segment_loop_mc
 
    label flex_loop_mc
 
-      coor stat sele atom FLX@a @b CA show end
+
+      coor stat sele atom FLX@a @b CA @debugshow end
+      if @?patchflexnamel@@{currligand}p@@{a}i@@{b} .eq. 0 then
+         set currres ?selresn
+      else
+         set currres patchflexnamel@@{currligand}p@@{a}i@@{b}
+      endif
+
       ! Here we can do direct access with something like 
       ! "goto tors_?selresn" without all the ifs, but what if label
       ! doesn't exist? Leave as is for now.
-      if ?selresn .eq. ARG goto tors_arg
-      if ?selresn .eq. ASN goto tors_asn
-      if ?selresn .eq. ASP goto tors_asp
-      if ?selresn .eq. CYS goto tors_cys
-      if ?selresn .eq. GLN goto tors_gln
-      if ?selresn .eq. GLU goto tors_glu
-      if ?selresn .eq. HSD goto tors_hsd
-      if ?selresn .eq. HSE goto tors_hse
-      if ?selresn .eq. HSP goto tors_hsp
-      if ?selresn .eq. ILE goto tors_ile
-      if ?selresn .eq. LEU goto tors_leu
-      if ?selresn .eq. LYS goto tors_lys
-      if ?selresn .eq. MET goto tors_met
-      if ?selresn .eq. PHE goto tors_phe
-      if ?selresn .eq. SER goto tors_ser
-      if ?selresn .eq. THR goto tors_thr
-      if ?selresn .eq. TRP goto tors_trp
-      if ?selresn .eq. TYR goto tors_tyr
-      if ?selresn .eq. VAL goto tors_val
-      if ?selresn .eq. ASPP goto tors_asp
-      if ?selresn .eq. GLUP goto tors_glup
-      if ?selresn .eq. LSN goto tors_lys
-      if ?selresn .eq. CYM goto tors_cys
-      if ?selresn .eq. CYSD goto tors_cys
-      if ?selresn .eq. SERD goto tors_ser
-      if ?selresn .eq. HSPD goto tors_hsd
-      if ?selresn .eq. HSPE goto tors_hse
+       if @currres .eq. ARG goto tors_arg
+       if @currres .eq. ASN goto tors_asn
+       if @currres .eq. ASP goto tors_asp
+       if @currres .eq. CYS goto tors_cys
+       if @currres .eq. GLN goto tors_gln
+       if @currres .eq. GLU goto tors_glu
+       if @currres .eq. HSD goto tors_hsd
+       if @currres .eq. HSE goto tors_hse
+       if @currres .eq. HSP goto tors_hsp
+       if @currres .eq. ILE goto tors_ile
+       if @currres .eq. LEU goto tors_leu
+       if @currres .eq. LYS goto tors_lys
+       if @currres .eq. MET goto tors_met
+       if @currres .eq. PHE goto tors_phe
+       if @currres .eq. SER goto tors_ser
+       if @currres .eq. THR goto tors_thr
+       if @currres .eq. TRP goto tors_trp
+       if @currres .eq. TYR goto tors_tyr
+       if @currres .eq. VAL goto tors_val
+       if @currres .eq. ASPP goto tors_asp
+       if @currres .eq. GLUP goto tors_glup
+       if @currres .eq. LSN goto tors_lys
+       if @currres .eq. CYM goto tors_cys
+       if @currres .eq. CYSD goto tors_cys
+       if @currres .eq. SERD goto tors_ser
+       if @currres .eq. HSPD goto tors_hsd
+       if @currres .eq. HSPE goto tors_hse
+       if @currres .eq. HS2  goto tors_hse
+       if @currres .eq. HSDP goto tors_hsp
+       if @currres .eq. HSEP goto tors_hsp
 
       label tors_cnt
 
@@ -68,193 +78,193 @@ return
 
 label tors_arg
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG show end -
-                                                                    sele atom FLX@a @b CD show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG @debugshow end -
+                                                                    sele atom FLX@a @b CD @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CD show end -
-                                                                    sele atom FLX@a @b NE show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CD @debugshow end -
+                                                                    sele atom FLX@a @b NE @debugshow end
 goto tors_cnt
 
 label tors_asn
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_asp
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_cys
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b SG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b SG @debugshow end
 goto tors_cnt
 
 label tors_gln
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG show end -
-                                                                    sele atom FLX@a @b CD show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG @debugshow end -
+                                                                    sele atom FLX@a @b CD @debugshow end
 goto tors_cnt
 
 label tors_glu
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG show end -
-                                                                    sele atom FLX@a @b CD show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG @debugshow end -
+                                                                    sele atom FLX@a @b CD @debugshow end
 goto tors_cnt
 
 label tors_hsd
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_hse
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_hsp
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_ile
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG1 show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG1 @debugshow end
 goto tors_cnt
 
 label tors_leu
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_lys
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG show end -
-                                                                    sele atom FLX@a @b CD show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG @debugshow end -
+                                                                    sele atom FLX@a @b CD @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CD show end -
-                                                                    sele atom FLX@a @b CE show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CD @debugshow end -
+                                                                    sele atom FLX@a @b CE @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CE show end -
-                                                                    sele atom FLX@a @b NZ show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CE @debugshow end -
+                                                                    sele atom FLX@a @b NZ @debugshow end
 goto tors_cnt
 
 label tors_met
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG show end -
-                                                                    sele atom FLX@a @b SD show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CG @debugshow end -
+                                                                    sele atom FLX@a @b SD @debugshow end
 goto tors_cnt
 
 label tors_phe
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_ser
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b OG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b OG @debugshow end
 goto tors_cnt
 
 label tors_thr
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b OG1 show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b OG1 @debugshow end
 goto tors_cnt
 
 label tors_trp
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_tyr
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB show end -
-                                                                    sele atom FLX@a @b CG show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CB @debugshow end -
+                                                                    sele atom FLX@a @b CG @debugshow end
 goto tors_cnt
 
 label tors_val
    incr ntors
-   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA show end -
-                                                                    sele atom FLX@a @b CB show end
+   move add mvtp tors weight 1.00 dmax 180.0 label tr@ntors fewer 0 sele atom FLX@a @b CA @debugshow end -
+                                                                    sele atom FLX@a @b CB @debugshow end
 goto tors_cnt
 

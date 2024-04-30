@@ -1,12 +1,27 @@
 * Monte Carlo delete moves
 * Moves deleted must match the ones added in mc_add.str
+* All moves must be unlinked before any delete takes place
 *
+
+if smartmc .eq. true then
+   move link lab1 tr4
+   move link lab1 tr3
+   move link lab1 tr2
+endif
 
 if covalent .eq. true then
  move dele label tr1
- move dele label tr2
+! move dele label tr2
+! decr ntors by 2
+ decr ntors by 1
 endif
+
 ! Additional torsional deletions below
+move dele label tr2
+move dele label tr3
+move dele label tr4
+move dele label tr5
+
+decr ntors by 4
 
 return
-
