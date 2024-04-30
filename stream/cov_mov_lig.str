@@ -15,17 +15,17 @@
 ! X-H bond in a manner that keeps stereochemistry. Then fine-tune C-X bond distance.
 
 ! Orient protein link hydrogen (X-H) towards active site center
-coor stat sele atom FLX@{covseg} 1 @protlink0 show end
+coor stat sele atom FLX@{covseg} 1 @protlink0 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+coor stat sele atom FLX@{covseg} 1 @protlink1 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
 
-coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+coor stat sele atom FLX@{covseg} 1 @protlink2 @debugshow end
 set x3 ?xave
 set y3 ?yave
 set z3 ?zave
@@ -82,10 +82,10 @@ open unit 1 write form name @pdbDIR/tmp0.pdb
 write coor pdb unit 1
 close unit 1
 
-coor stat sele atom FLX@{covseg} 1 @protlink2 show end
-coor axis sele atom FLX@{covseg} 1 @protlink0 show end sele atom FLX@{covseg} 1 @protlink1 show end
-coor rotate axis phi @phi sele atom FLX@{covseg} 1 @protlink2 show end 
-coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+coor stat sele atom FLX@{covseg} 1 @protlink2 @debugshow end
+coor axis sele atom FLX@{covseg} 1 @protlink0 @debugshow end sele atom FLX@{covseg} 1 @protlink1 @debugshow end
+coor rotate axis phi @phi sele atom FLX@{covseg} 1 @protlink2 @debugshow end 
+coor stat sele atom FLX@{covseg} 1 @protlink2 @debugshow end
 
 ! Print pdb file for test cases
 open unit 1 write form name @pdbDIR/tmp1.pdb
@@ -95,12 +95,12 @@ close unit 1
 ! Orient ligand C-H attachment point towards C-X bond
 
 ! Now translate ligand so that covalent C-link superposes with protein X atom
-coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+coor stat sele atom FLX@{covseg} 1 @protlink1 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom ligand_@currligand 1 @liglink1 show end
+coor stat sele atom ligand_@currligand 1 @liglink1 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
@@ -110,15 +110,15 @@ calc dy @y1 - @y2
 calc dz @z1 - @z2
 
 coor trans xdir @dx ydir @dy zdir @dz sele segi ligand_@currligand end
-coor stat sele atom ligand_@currligand 1 @liglink1 show end
+coor stat sele atom ligand_@currligand 1 @liglink1 @debugshow end
 
 ! Now orient ligand so that X-C bond aligns with X-H bond
-coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+coor stat sele atom FLX@{covseg} 1 @protlink1 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+coor stat sele atom FLX@{covseg} 1 @protlink2 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
@@ -127,12 +127,12 @@ calc dx1 @x2 - @x1
 calc dy1 @y2 - @y1
 calc dz1 @z2 - @z1
 
-coor stat sele atom ligand_@currligand 1 @liglink1 show end
+coor stat sele atom ligand_@currligand 1 @liglink1 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom ligand_@currligand 1 @liglink2 show end
+coor stat sele atom ligand_@currligand 1 @liglink2 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
@@ -207,7 +207,9 @@ read sequ card
 DUMY DUMY
 
 generate dummies setup first none last none
-print coor sele all end
+if @debug .eq. true then
+   print coor sele all end
+endif
 
 bomlev @bomblevel
 
@@ -219,24 +221,24 @@ calc dux2 10.0 * @xvec
 calc duy2 10.0 * @yvec
 calc duz2 10.0 * @zvec
 
-coor set xdir @dux1 ydir @duy1 zdir @duz1 sele resn DUMY .and. resi 1 show end
-coor set xdir @dux2 ydir @duy2 zdir @duz2 sele resn DUMY .and. resi 2 show end
+coor set xdir @dux1 ydir @duy1 zdir @duz1 sele resn DUMY .and. resi 1 @debugshow end
+coor set xdir @dux2 ydir @duy2 zdir @duz2 sele resn DUMY .and. resi 2 @debugshow end
 
 !print coor sele all end
 
-coor axis sele resn DUMY .and. resi 1 show end sele resn DUMY .and. resi 2 show end
+coor axis sele resn DUMY .and. resi 1 @debugshow end sele resn DUMY .and. resi 2 @debugshow end
 
 dele atom sele resn DUMY end
 
 coor rotate axis phi @phi sele segid ligand_@currligand end
 
 ! Now translate ligand so that covalent C-link superposes with protein H-X atom
-coor stat sele atom FLX@{covseg} 1 @protlink2 show end
+coor stat sele atom FLX@{covseg} 1 @protlink2 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom ligand_@currligand 1 @liglink1 show end
+coor stat sele atom ligand_@currligand 1 @liglink1 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
@@ -253,12 +255,12 @@ write coor pdb unit 1
 close unit 1
 
 ! Now get current C-X distance 
-coor stat sele atom FLX@{covseg} 1 @protlink1 show end
+coor stat sele atom FLX@{covseg} 1 @protlink1 @debugshow end
 set x1 ?xave
 set y1 ?yave
 set z1 ?zave
 
-coor stat sele atom ligand_@currligand 1 @liglink1 show end
+coor stat sele atom ligand_@currligand 1 @liglink1 @debugshow end
 set x2 ?xave
 set y2 ?yave
 set z2 ?zave
