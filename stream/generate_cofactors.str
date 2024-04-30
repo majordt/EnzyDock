@@ -9,6 +9,8 @@
 ! If no cofactors, uncomment goto
 ! goto skip_cofactors
 
+define cofactors sele none end
+
 set c 1
 
 set NumObject ?nres
@@ -24,7 +26,7 @@ label read_cofactors
 
     set NumObject ?nres
 
-    define cofactors sele cofactors .or. segi COF@c show end
+    define cofactors sele cofactors .or. segi COF@c @debugshow end
 
     incr c
 

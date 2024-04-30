@@ -1,0 +1,70 @@
+************************************************************
+*                  Start fp_docking.str                    *
+************************************************************
+* A file to set up the fingerprint docking for the docking 
+* program. Use point NOE restraints to enforce compliance with 
+* fingerprint.
+*
+
+! This variable is not in use. Can be used if consensus docking uses
+! previous structure (and not first structure) as reference for 
+! consensus restraints.
+calc lastligand @currligand - 1
+
+! Not sure why we have this condition here
+if @currligand .le. @numligands goto read_fp_cons
+goto skip_fp_cons
+
+label read_fp_cons
+
+set numrefatom 0
+bomlev -1
+open unit 101 read form name @stdDIR/fp_def.str
+if ?iostat .ne. -1 then
+   stream @stdDIR/fp_def.str
+else
+   echo EnzyDock WARNING: fp_def.str file missing!
+   echo EnzyDock WARNING: See documentation
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: fp_def.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+   close unit 33
+   stop
+endif
+bomlev @bomblevel
+
+! If no reference atoms found, skip to end
+if numrefatom .lt. 1 goto skip_fp_cons
+
+! Moved to param_set_check
+!set fpmax 0.5 ! If greater than 0.5 A, apply force
+set i 1
+label fp_loop
+
+   noe
+      assign cnox @xfpatom@@i cnoy @yfpatom@@i cnoz @zfpatom@@i -
+          select segid LIGAND_@currligand .and. type @latom@@i end -
+          kmin 0.0 rmin 0.0 kmax @harmforce rmax @fpmax fmax @harmforce
+   end
+   incr i
+
+if i .le. @numrefatom goto fp_loop
+
+! These prints are useful for debugging
+!print cons
+!print coor
+!print coor comp
+
+label skip_fp_cons
+bomlev @bomblevel
+
+!**********************************************************
+!*                   End consensus_docking.str            *
+!**********************************************************
+
+return
+

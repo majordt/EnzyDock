@@ -1,0 +1,346 @@
+************************************************************
+* Read in explicit water molecules for solvation           *
+* Note that these waters have an angle, but not H-H bond   *
+* so no shaking of these waters                            *
+* Note that for now waters are included in MC and MD       *
+************************************************************
+*
+
+! Read in cofactor and existing waters to make sure explicit waters 
+! don't overlap with cofactor. Protein exists at this stage. 
+! Overlap with ligand will be managed during docking.
+stream @strDIR/read_protein.str
+if @numcofactor .gt. 0 then
+   stream @strDIR/generate_cofactors.str
+endif
+if @tagwtin .eq. true then
+   stream @strDIR/read_water_in.str
+endif
+!if @tagwout .eq. true then
+!   stream @strDIR/read_water_out.str
+!endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Read in water sphere a few times to hydrate grid
+! Each time sphere is rotated randomly
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+set nhydr 3  ! Number of times to read in sphere
+set ihydr 1
+
+label hydrate_loop
+
+   set NumObject ?nres
+
+   bomlev -1
+   open unit 1 form read name @crdDIR/expl_sphere.crd
+   bomlev @bomblevel
+   if ?iostat .ne. -1 then
+
+      ! Read sphere of water that was prepared in s3
+      open read card unit 1 name @crdDIR/expl_sphere.crd
+      read sequ coor unit 1
+      generate EWAT@ihydr setup angle nodihedral
+      rewind unit 1
+      read coor card unit 1 offs @NumObject
+      close unit 1
+
+      define explwat sele segid EWAT@ihydr end
+      set explcwat true ! Set false in check file
+   else
+      echo "EnzyDock WARNING: Water requested but no crd file found..."
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: Water requested but no crd file found... Skipping...
+*
+!      close unit 33
+      goto skip_expl
+   endif
+
+   calc phi ?rand * 360.0
+   coor rotate phi @phi xdir 1.0 select segid EWAT@ihydr end
+   calc phi ?rand * 360.0
+   coor rotate phi @phi ydir 1.0 select segid EWAT@ihydr end
+   calc phi ?rand * 360.0
+   coor rotate phi @phi zdir 1.0 select segid EWAT@ihydr end
+
+   ! Delete explicit waters beyond grid boundaries
+   coor stat sele explwat end
+
+   calc xmov @bsitex - ?xave
+   calc ymov @bsitey - ?yave 
+   calc zmov @bsitez - ?zave 
+
+   ! Translate water sphere to center of grid
+   coor trans xdir @xmov ydir @ymov zdir @zmov sele explwat end
+
+   coor stat sele explwat end
+
+   ! Remove waters too close to grid boundary (because of repulsive force)
+   calc ggxmin @gxmin + 1.0
+   calc ggymin @gymin + 1.0
+   calc ggzmin @gzmin + 1.0
+   calc ggxmax @gxmax - 1.0
+   calc ggymax @gymax - 1.0
+   calc ggzmax @gzmax - 1.0
+   define ewatin sele explwat .and.  ((prop x .gt. @ggxmin) .and. (prop x .lt. @ggxmax) .and. (prop y .gt. @ggymin) -
+                            .and. (prop y .lt. @ggymax) .and. (prop z .gt. @ggzmin) .and. (prop z .lt. @ggzmax)) end
+
+   define ewatout sele .byres. (explwat .and. .not. ewatin) end
+
+   if ?nsel .gt. 0 then
+      delete atom sele ewatout end
+   endif
+
+   ! Delete any bulk waters overlapping with the rest of the system
+   define bump select (.not. segid EWAT@ihydr) .and. .not. hydrogen end
+
+   define dump select .byres. ((segid EWAT@ihydr .and. type OH2) .and. (bump .around. 2.8)) end
+
+   if ?nsel .gt. 0 then
+      delete atoms select dump end
+   endif
+
+   ! Join segments (if exist)
+   if ihydr .eq. 1 then
+      define junk sele segi EWAT1 end
+      if ?nsel .gt. 0 then
+         rename segi EWAT sele segi EWAT1 end
+         join EWAT renum
+      endif
+   else
+      define junk sele segi EWAT end
+      if ?nsel .gt. 0 then
+         define junk sele segi EWAT@ihydr end
+         if ?nsel .gt. 0 then
+            join EWAT EWAT@ihydr renum
+         endif
+      else
+         define junk sele segi EWAT@ihydr end
+         if ?nsel .gt. 0 then
+            rename segi EWAT sele segi EWAT@ihydr end
+            join EWAT renum
+         endif
+      endif
+   endif
+
+   incr ihydr
+
+if ihydr .le. @nhydr goto hydrate_loop
+
+! Delete protein atoms if using grid
+if @usegrid .eq. true then
+   delete atoms sele segi PEP* end
+endif
+
+join EWAT renum
+
+define explwat sele segid EWAT .and. .not. hydrogen end
+set nwat ?nsel
+! If no explicit waters added, skip to end of file
+if nwat .lt. 1 then
+   set expl false
+   goto skip_expl   
+endif
+
+hbuild
+
+! Write pdb file of explicit water in initial positions
+open write card unit 1  name @pdbDIR/waterexpl_0.pdb
+write coor pdb card unit 1 sele segid EWAT end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Now perform MC on water and then cluster
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+set iuncrd 11
+set nsavc 1000
+set watmcsteps 100000
+calc skipframes 1   ! Skip first set of frames when reading trajectory
+set temp 300.0
+
+set idomcfrq 5
+if @idomcfrq .gt. @watmcsteps then
+   set idomcfrq 1
+endif
+
+cons fix sele .byres. .not. segid EWAT end
+
+nbonds cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb vswitch switch eps @eps @dielec
+
+! Note that some water might evaporate during mini and MC unless restraint imposed
+calc rad @gridsize/2
+
+set i 1
+
+!label noe_loop
+
+!   noe
+!      assign cnox @bsitex cnoy @bsitey cnoz @bsitex select atom EWAT @i OH2 end -
+!          kmin 0.0 rmin 0.0 kmax 100.0 rmax @rad fmax 200.0
+!   end
+!   incr i
+
+!if i .le. @nwat goto noe_loop
+
+grid off
+if @usegrid .eq. true then
+    grid on
+endif
+
+nbonds atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+   vswitch switch @softon
+
+mini abnr nsteps @mstep nprint @mprint
+
+open write unformatt unit @iuncrd name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_waterexpl.dcd
+
+! Rigid body translations of explicit waters
+move add mvtp rtrn byresidue weight 1.00 dmax 0.10 label wtrn sele segid EWAT end
+! Rigid body rotations of explicit waters
+move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele segid EWAT end
+! Link moves so they are done together.
+! Remove for CHARMM-GUI until all MC bugs cleared
+!move link lab1 wtrn lab2 wrot
+
+! Do standard single temperature MC simulation
+mc temperature @temp nsteps @watmcsteps -
+   iseed @seed1 @seed2 @seed3 @seed4 -
+   idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+   iuncrd @iuncrd nsavc @nsavc
+
+! Remove for CHARMM-GUI until all MC bugs cleared
+!move link lab1 wtrn
+move dele label wtrn
+move dele label wrot
+
+! Read trajectory file
+open read unformatt unit @iuncrd name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_waterexpl.dcd
+
+traj query unit @iuncrd
+
+traj firstu @iuncrd begin @skipframes nunit 1 skip 1
+calc ntot = ?nfile   ! Number of structures in file (from query)
+calc mcwat_ntot @ntot - @skipframes
+
+set mcount 1             ! Counter
+
+label mcwat_loop
+
+   traj read comp  ! Read structure into comp array
+
+   ! Warn if any waters moved outside grid boundaries
+   define explwat sele segid EWAT end
+   define ewatin sele explwat .and.  ((prop x .gt. @ggxmin) .and. (prop x .lt. @ggxmax) .and. (prop y .gt. @ggymin) -
+                            .and. (prop y .lt. @ggymax) .and. (prop z .gt. @ggzmin) .and. (prop z .lt. @ggzmax)) end
+
+   define ewatout sele explwat .and. .not. ewatin end
+
+   if ?nsel .gt. 0 then
+      !delete atom sele .byres. ewatout end
+      !join EWAT renum
+      echo EnzyDock WARNING: Waters moved outside grid boundary 
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: Waters moved outside grid boundary
+*
+!      close unit 33
+   endif
+
+   ! Write pdb file of explicit water in final positions
+   open write card unit 1  name @pdbDIR/waterexpl_@mcount.pdb
+   write coor comp pdb card unit 1 sele segid EWAT end
+
+   incr mcount
+
+if mcount .le. @{mcwat_ntot} goto mcwat_loop
+
+define explwat sele segid EWAT .and. .not. hydrogen end
+set nwat ?nsel
+! If no explicit waters remaining, skip to end of file
+if nwat .lt. 1 then
+   set expl false
+   goto skip_expl
+endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Cluster explicit water molecules using DBSCAN script
+! Writes pdb file of explicit water in final positions
+! Name of file: @pdbDIR/waterexpl.pdb
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ calc 0 @mcount - 1 
+ set outwater "waterexpl.pdb"
+ set 1 @outwater
+ !system "../scripts/cluster_water.py @0 @1"
+ close unit 33
+ system "../scripts/python_wrapper.sh ../scripts/cluster_water.py @0 @1"
+ open append unit 33 form name enzydock.log
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Delete all explicit waters, read in clustered water and minimize, then save
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+define explwat sele segid EWAT end
+set nwat ?nsel
+if nwat .gt. 0 then
+   delete atoms sele .byres. explwat end
+endif
+ 
+set NumObject ?nres
+
+open unit 1 form read name @pdbDIR/waterexpl.pdb
+read sequ pdb unit 1
+generate EWAT setup angle nodihedral
+rewind unit 1
+read coor pdb unit 1 offset @NumObject
+close unit 1     
+
+hbuild sele type H* .and. segi EWAT end
+
+cons fix sele .not. segi EWAT end
+
+define explwat sele segid EWAT .and. .not. hydrogen end
+set nwat ?nsel
+set i 1
+
+!label noe_loop_1
+
+!   noe
+!      assign cnox @bsitex cnoy @bsitey cnoz @bsitex select atom EWAT @i OH2 end -
+!          kmin 0.0 rmin 0.0 kmax 100.0 rmax @rad fmax 200.0
+!   end
+!   incr i
+
+!if i .le. @nwat goto noe_loop_1
+
+mini abnr nstep @mstep nprint @mprint 
+
+cons fix sele none end
+
+open write card unit 1  name @pdbDIR/waterexpl.pdb
+write coor pdb card unit 1 sele segid EWAT end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Delete all waters inside grid as well as cofactors (readying for grid generation)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+define explwat sele segid EWAT end
+set nwat ?nsel
+if nwat .gt. 1 then
+   delete atoms sele .byres. explwat end
+endif
+
+set tagwexp true
+
+label skip_expl
+
+if @numcofactor .gt. 0 then
+   delete atoms sele segi COF* end
+endif
+
+if @tagwtin .eq. true then
+   delete atoms sele segid WTIN end
+endif
+
+return
+
