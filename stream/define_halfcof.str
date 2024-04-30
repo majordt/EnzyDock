@@ -1,0 +1,33 @@
+************************************************************
+*                Start define_halfcof.str                  *
+************************************************************
+* Handle situation where some (or all) atoms of cofactor(s)
+* are out of the grid boundaries.
+* The atoms outside should be fixed.
+* The atoms inside should only be restrained.
+* 
+
+! grid boundaries are:
+! @gxmin @gymin @gzmin
+! @gxmax @gymax @gzmax
+
+
+define icofactors sele none end
+set c 1
+label assign_cofact_hc
+    define icofactors sele icofactors .or. segi COF@c @debugshow end
+    incr c
+if c .le. @numcofactor goto assign_cofact_hc
+
+define cofin sele icofactors .and. ((prop x .gt. @gxmin) -
+   .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
+   .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+       .and. (prop z .lt. @gzmax)) @debugshow end
+
+define cofout sele none end
+define cofout sele icofactors .and. (.not. cofin) end
+
+define cofactors sele cofin end
+
+return
+
