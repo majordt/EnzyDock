@@ -1,0 +1,148 @@
+* Temporary file to define patches variables
+* To be merged into userparam.str and param_set_check.str
+* RS 13/05/2021
+* 
+
+! userparam.str
+
+! Set the number of patches for a ligand and for the protein unit:
+! patchcountligp@{ligand_number}@{protein_unit}
+! ligand 2, protein unit number 1 has one patch
+! ligand 3, protein unit number 1 has one patch
+!set patchcountligp21 1
+!set patchcountligp31 1
+
+! The name of the Nth patch for a ligand and for the protein unit:
+! patchnamelig@{ligand_number}p@{protein_unit}n@{patch_serial_number}
+! ligand 2, protein unit number 1, the first patch is named 'CYSD'
+! ligand 3, protein unit number 1, the first patch is named 'CYSD'
+!set patchnamelig2p1n1 CYSD
+!set patchnamelig3p1n1 CYSD
+
+! The residue number of the Nth patch for a ligand and for the protein unit:
+! patchreslig@{ligand_number}p@{protein_unit}n@{patch_serial_number}
+! ligand 2, protein unit number 1, first patch needs residue 130
+! ligand 3, protein unit number 1, first patch needs residue 300
+!set patchreslig2p1n1 130
+!set patchreslig3p1n1 300
+
+
+!!!!!!!!!!!!!!!!!!!
+! param_set_check.str
+
+! give default values for the count
+! if patch is defined but not count, it'll be ignored
+! additional checks might be needed
+
+! proteinunit is known
+! numligands is known
+
+! loop over ligands
+set l 1 ! lign 1
+label countp_lig
+    ! loop over protein units for a specific ligand
+    set prot 1 ! p 1
+    label countp_prot
+        set test 0
+        set test @?patchcountligp@@{l}@@{prot}
+        if @test .eq. 0 then
+            set patchcountligp@@{l}@@{prot} 0
+        else
+            ! set felx residue (different indexing)
+            set respatch 1
+            ! loop over patches for a specific unit and a specific ligand
+            label patch_set_flex
+                goto assign_flex
+                label after_assign_flex
+                !!!! DEBUG PRINT STARTS
+                echo @patchflexlig@@{l}p@@{prot}n@@{respatch}
+                echo @patchnamelig@@{l}p@@{prot}n@@{respatch}
+                !!!! DEBUG PRINT ENDS
+                incr respatch
+            if respatch .le. @patchcountligp@@{l}@@{prot} goto patch_set_flex
+        endif
+        incr prot
+    if @prot .le. @proteinunit goto countp_prot
+    incr l
+if @l .le. @numligands goto countp_lig
+
+return
+!stop
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! find the index of the residue among the flexible residues of the protein unit
+!!! patch definitions (from above)
+! ligand : @l
+! protein unit : @prot
+! patch index [serial number] : @respatch
+! residue number: @{patchreslig@@{l}p@@{prot}n@@{respatch}}
+
+!!! flexible residues definitions (from above)
+! number of flexible residues in relevant protein unit: @numflex@@prot
+! residue number of the Nth flexible residue : @flex@@prot@@n
+
+label assign_flex
+! make sure patch name and residue exists
+set test 0
+set test @?patchnamelig@@{l}p@@{prot}n@@{respatch}
+if @test .eq. 0 then
+    echo EnzyDock WARNING: No patch name found for ligand @l    
+    echo EnzyDock WARNING: protein unit @prot patch number @respatch
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* EnzyDock WARNING: No patch name found for ligand @l
+* EnzyDock WARNING: protein unit @prot patch number @respatch
+* Terminating EnzyDock run...
+*
+    close unit 33
+    stop
+endif
+
+set test 0
+set test @?patchreslig@@{l}p@@{prot}n@@{respatch}
+if @test .eq. 0 then
+    echo EnzyDock WARNING: No residue number found for ligand @l    
+    echo EnzyDock WARNING: protein unit @prot patch number @respatch
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* EnzyDock WARNING: No residue number found for ligand @l
+* EnzyDock WARNING: protein unit @prot patch number @respatch
+* Terminating EnzyDock run...
+*
+    close unit 33
+    stop
+endif
+
+set assigned false
+set flexind 1
+! loop over flexible residues of a specific ligand and protein unit
+label match_flex
+    if @patchreslig@@{l}p@@{prot}n@@{respatch} .eq. @flex@@{prot}@@{flexind} then
+        set patchflexlig@@{l}p@@{prot}n@@{respatch} @flexind
+        set patchflexnamel@@{l}p@@{prot}i@@{flexind} @patchnamelig@@{l}p@@{prot}n@@{respatch}
+        set assigned true
+    endif
+    incr flexind
+if @flexind .le. @numflex@@{prot} goto match_flex
+
+! make sure flexible residue was found
+
+if @assigned .eq. true then
+    goto after_assign_flex
+else
+    echo EnzyDock WARNING: Residue that needs a patch is not defined as flexible:
+    echo EnzyDock WARNING: Ligand state: @l; Protein unit: @prot; Patch nuber: @respatch
+    echo EnzyDock WARNING: Residue number: @patchreslig@@{l}p@@{prot}n@@{respatch}
+    ! Update readable log file
+!    open append unit 33 form name enzydock.log
+    write title unit 33
+* EnzyDock WARNING: Residue that needs a patch is not defined as flexible:
+* EnzyDock WARNING: Ligand state: @l; Protein unit: @prot; Patch nuber: @respatch
+* EnzyDock WARNING: Residue number: @patchreslig@@{l}p@@{prot}n@@{respatch}
+* Terminating EnzyDock run...
+*
+    close unit 33
+    stop
+endif

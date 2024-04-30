@@ -15,6 +15,14 @@ if @covresn .eq. tyr then
 endif
 echo EnzyDock ERROR: No covalent residue chosen.                   
 echo EnzyDock: Check covalent residue definitions...
+! Update readable log file
+!open append unit 33 form name enzydock.log
+write title unit 33
+* EnzyDock ERROR: No covalent residue chosen.
+* EnzyDock: Check covalent residue definitions...
+* Terminating EnzyDock run...
+*
+close unit 33
 stop
 
 label patch_on
