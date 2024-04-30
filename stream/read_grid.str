@@ -10,11 +10,20 @@ open unit 10 read @gform name @scr1DIR/@gridname.@gfext
 if ?iostat .eq. -1 then
    echo EnzyDock ERROR: Grid file not found.
    echo EnzyDock: Set gridone to FALSE in userparam.str.
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock ERROR: Grid file not found.
+* EnzyDock: Set gridone to FALSE in userparam.str.
+* Terminating EnzyDock run...
+*
+   close unit 33
    stop
 endif
 bomlev @bomblevel
 grid read @gform unit 10
 close unit 10
+grid on
 set gridon true
 
 !***********************************************************

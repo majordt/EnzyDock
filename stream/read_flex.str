@@ -21,8 +21,8 @@ label read_flex_loop
    read coor pdb unit 1 offset @NumObject
    close unit 1
 
-!   define flex@c sele segi FLX@c show end
-!   define flex sele flex .or. flex@c show end
+!   define flex@c sele segi FLX@c @debugshow end
+!   define flex sele flex .or. flex@c @debugshow end
 
    label skip_read_flex_loop
 
