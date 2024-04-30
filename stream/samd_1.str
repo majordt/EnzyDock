@@ -1,0 +1,6 @@
+* Stream in SAMD boolean. Set to false if no flexible ring found.
+*
+
+set samd = false
+
+return

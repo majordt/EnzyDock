@@ -22,11 +22,25 @@ calc teminc @htfreq*(@heattemp - @cooltemp)/@numheatsteps
 calc frq @numheatsteps/10
 calc frq2 10*@frq
 
+if @silent .eq. true then
+!  RS: not silent, may interfere with the calculation
+!  set frq @ligmdsteps
+!  set frq2 @ligmdsteps
+  set sillev 1
+else
+  set sillev 5 ! regular prnlev
+endif
+
 ! Possible to use restart files, but causes instability
 !open write unit 21  card name @scrDIR/heating.rst
 
 stream @strDIR/seed.str   ! Generate new seeds
 
+! RS shake
+shake bond para tol 1.0e-9  sele hydrogen end -
+   sele ( .not. hydrogen ) end
+
+prnlev @sillev
 dynamics leap start timestep @timestep -
     nstep @numheatsteps nprint @frq2 iprfrq @frq -
     firstt @cooltemp finalt @heattemp teminc @teminc ihtfrq @htfreq ieqfrq @htfreq -
@@ -35,6 +49,10 @@ dynamics leap start timestep @timestep -
     iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
     inbfrq 0 ilbfrq 0  - ! Updates not needed
     echeck 5000000.0
+prnlev 5
+
+! RS shake
+shake off
 
 ! Cool down
 ! set teminc -10.0
@@ -44,10 +62,24 @@ calc teminc @clfreq*(@cooltemp - @heattemp)/@numcoolsteps
 calc frq @numcoolsteps/10
 calc frq2 10*@frq
 
+if @silent .eq. true then
+!  RS: not silent, may interfere with the calculation
+!  set frq @ligmdsteps
+!  set frq2 @ligmdsteps
+  set sillev 1
+else
+  set sillev 5 ! regular prnlev
+endif
+
 !open read  unit 22  card name @scrDIR/heating.rst
 
 stream @strDIR/seed.str   ! Generate new seeds
 
+! RS shake
+shake bond para tol 1.0e-9  sele hydrogen end -
+   sele ( .not. hydrogen ) end
+
+prnlev @sillev
 dynamics leap start timestep @timestep -
     nstep @numcoolsteps nprint @frq2 iprfrq @frq -
     firstt @heattemp finalt @cooltemp teminc @teminc ihtfrq @clfreq ieqfrq @clfreq -
@@ -56,6 +88,10 @@ dynamics leap start timestep @timestep -
     iunwri -1 iuncrd -1 iunrea -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
     inbfrq 0 ilbfrq 0  - ! Updates not needed
     echeck 5000000.0
+prnlev 5
+
+! RS shake
+shake off
 
 skipe none
 shake off
