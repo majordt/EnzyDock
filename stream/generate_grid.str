@@ -68,7 +68,7 @@ grid off
 skipe none
 
 set gridone true
-set gridon  true
+set gridon  false
 
 dele atom sele segid prob end
 
@@ -77,6 +77,8 @@ delete atom
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                  END GRID GENERATION
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+prnlev 5
 
 !**********************************************************
 !*                 End generate_grid.str

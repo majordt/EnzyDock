@@ -13,8 +13,6 @@ if @covalent .eq. false then
    move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label atrn sele segid ligand_@currligand end
    ! Rigid body rotations of ligand
    move add mvtp rrot byresidue weight 0.25 dmax 60.0 label arot sele segid ligand_@currligand end
-   ! Link moves so they are done together.
-   move link lab1 atrn lab2 arot
 endif
 !if @water .eq. true then
    ! Rigid body translations of water molecules
@@ -24,6 +22,35 @@ endif
    ! Link moves so they are done together.
 !   move link lab1 wtrn lab2 wrot
 !endif
+! Only select waters near ligand
+if tagwexp .eq. true then
+   define wlig sele .byres. ((segid EWAT .and. type OH2) .and. ((segid ligand_@currligand .and. .not. hydrogen) .around. 5.0)) end
+   set qwlig false
+   if ?nsel .gt. 0 then
+      set qwlig true
+   endif
+!if tagwexp .eq. true then
+   if qwlig .eq. true then
+      ! Rigid body translations of explicit waters
+      move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label wtrn sele wlig end
+      ! Rigid body rotations of explicit waters
+      move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele wlig end
+   endif
+endif
+
+! Link moves so they are done together.
+! Remove for CHARMM-GUI until all MC bugs cleared
+!if @covalent .eq. false then
+!   move link lab1 atrn lab2 arot
+!endif
+
+! Remove for CHARMM-GUI until all MC bugs cleared
+!if tagwexp .eq. true then
+!   if qwlig .eq. true then
+!      move link lab1 wtrn lab2 wrot
+!   endif
+!endif
+
 bomlev -1
 open unit 101 read form name @stmDIR/mc_add.str
 if ?iostat .ne. -1 then
@@ -31,6 +58,14 @@ if ?iostat .ne. -1 then
 else
    echo EnzyDock WARNING: mc_add.str file missing!
    echo EnzyDock WARNING: See documentation
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: mc_add.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+   close unit 33
    stop
 endif
 bomlev @bomblevel
@@ -44,6 +79,14 @@ if @flexibledocking .eq. true then
    else
       echo EnzyDock WARNING: mc_sidechains.str file missing!
       echo EnzyDock WARNING: See documentation
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: mc_sidechains.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+      close unit 33
       stop
    endif
    bomlev @bomblevel
@@ -159,19 +202,31 @@ label mcsa
 label skip_mc
 
 ! First unlink moves then delete
-if @covalent .eq. false then
-   move link lab1 atrn
-!endif
-!if @water .eq. true then
-!   move link lab1 wtrn
+! Remove for CHARMM-GUI until all MC bugs cleared
+!if tagwexp .eq. true then
+!   if qwlig .eq. true then
+!      move link lab1 wtrn
+!   endif
 !endif
 !if @covalent .eq. false then
-   move dele label atrn
-   move dele label arot
-endif
-!if @water .eq. true then
-!   move dele label wtrn
-!   move dele label wrot
+!   move link lab1 atrn
+!endif
+!!if @water .eq. true then
+!!   move link lab1 wtrn
+!!endif
+!if @covalent .eq. false then
+!   move dele label atrn
+!   move dele label arot
+!endif
+!!if @water .eq. true then
+!!   move dele label wtrn
+!!   move dele label wrot
+!!endif
+!if tagwexp .eq. true then
+!   if qwlig .eq. true then
+!      move dele label wtrn
+!      move dele label wrot
+!   endif
 !endif
 bomlev -1
 open unit 101 read form name @stmDIR/mc_delete.str
@@ -180,9 +235,28 @@ if ?iostat .ne. -1 then
 else
    echo EnzyDock WARNING: mc_delete.str file missing!
    echo EnzyDock WARNING: See documentation
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: mc_delete.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+   close unit 33
    stop
 endif
 bomlev @bomblevel
+
+if @covalent .eq. false then
+   move dele label atrn
+   move dele label arot
+endif
+if tagwexp .eq. true then
+   if qwlig .eq. true then
+      move dele label wtrn
+      move dele label wrot
+   endif
+endif
 
 if @flexibledocking .eq. true then
    bomlev -1
@@ -192,6 +266,14 @@ if @flexibledocking .eq. true then
    else
       echo EnzyDock WARNING: mc_sidechains_delete.str file missing!
       echo EnzyDock WARNING: See documentation
+      ! Update readable log file
+!      open append unit 33 form name enzydock.log
+      write title unit 33
+* EnzyDock WARNING: mc_sidechains_delete.str file missing!
+* EnzyDock WARNING: See documentation
+* Terminating EnzyDock run...
+*
+      close unit 33
       stop
    endif
    bomlev @bomblevel
