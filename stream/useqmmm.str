@@ -85,12 +85,12 @@ if ?squantm .eq. 1 then
    quantum remove am1 charge @qmcharge@@currligand group select QMS show end
    set qmdefined true
 endif
-if ?quantum .eq. 1 then
-   quantum remove am1 charge @qmcharge@@currligand group select QMS show end
-   set qmdefined true
-endif
+!if ?quantum .eq. 1 then
+!   quantum remove am1 charge @qmcharge@@currligand group select QMS show end
+!   set qmdefined true
+!endif
 if ?qchem .eq. 1 then
-
+   set qmdefined true
    ! Account for dielectric constant (note that for flexible docking this will also influence
    ! protein-protein interactions unless using special code that separates between MM-MM and 
    ! QM-MM interactions)
@@ -126,8 +126,23 @@ if ?qchem .eq. 1 then
    energy
 
 endif
+
+! Only switch on default qm/mm if no other qm/mm active
+if @qmdefined .eq. false then
+   if ?quantum .eq. 1 then
+      quantum remove am1 charge @qmcharge@@currligand group select QMS show end
+      set qmdefined true
+   endif
+endif
+
 if @qmdefined .eq. false then
    echo EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+*
+!   close unit 33
 endif
 !grid on
 

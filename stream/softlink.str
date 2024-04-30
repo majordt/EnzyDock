@@ -15,7 +15,10 @@ if softlink .eq. true then
    set 0            @DIR0                            ! Results directory
    set 1            @proj                            ! Create soft link here
    set 2            @in1
-   system "../scripts/softlink.py @0 @1 @2"
+!   system "../scripts/softlink.py @0 @1 @2"
+   close unit 33
+   system "../scripts/python_wrapper.sh ../scripts/softlink.py @0 @1 @2"
+   open append unit 33 form name enzydock.log
    set DIR @1
 else ! This won't work if using mixed case filenames
    set DIR @DIR0/@proj

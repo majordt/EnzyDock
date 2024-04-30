@@ -7,14 +7,14 @@
 
 ! BOMBLEVEL - The bomlev for the current run of the program
 set bomblevel 0
-
+set silent true ! false
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Enzyme details
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! PROTEINNAME - The name of the protein PDB or CRD, i.e. the 
 ! name of the potein. Must correspond to input file names.
-set proteinname 6y2f
+set proteinname 5r7y
 
 ! RUNID - The name of the run. Only used for output files.
 set runid @proj
@@ -48,6 +48,11 @@ set disulf    0   ! If 0 the remaining variables are ignored
 ! consensus docking, if 1 performs normal docking. 
 set numligands 1
 
+! Prepare ligands parameters and PDB file
+! If set to true it will read csv file that located in the pdb directory
+!
+set prepare_ligands false
+
 ! Last intermediate
 ! If the docking includes covalently connected co-factor, like PP, 
 ! then ligands should be docked in a specific order.
@@ -56,7 +61,7 @@ set numligands 1
 ! F.ex. in CotB2 substrate is connected to PP, but 6 intermediates and
 ! final product are not. Then numligands=8, and lastinter=7, and substrate
 ! is defined as last ligand (i.e. ligand_8)
-set lastinter @numligands
+calc lastinter @numligands
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Cofactor details
@@ -70,6 +75,19 @@ set numcofactor 0
 ! If patching between protein and cofactor (patches and patch files must be included by user!)
 set patch_cofact false
 
+! If patching between ligand and cofactor (patches and patch files must be included by user!)
+set patch_lig_cofact false
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Water and cofactor force constants
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Force contant for restarining cofactors
+set kcf 500.0
+
+! Force contant for restarining waters
+set kwat 50.0
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Flexible & covalent docking details
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -77,20 +95,20 @@ set patch_cofact false
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! FLEXIBLEDOCKING - Allows flexible binding site residues during docking
 ! One can choose just side chains or also backbone atoms (using flexibleback)
-set flexibledocking true
-set flexibleback    true
+set flexibledocking false
+set flexibleback    false
 set kbf 25.0        ! Backbone force constant for terminal residues
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Covalent docking. Covalent anchor residue must be flexible and
 ! must be the first residue in list below
-set covalent true
-set covresn  cys    ! Cys (can be Ser or Tyr)
-set covresi  145    ! Cys145
-set covseg   1      ! Protein segment number
-set liglink1 C57    ! Ligand atom that links covalently
-set liglink2 H32    ! Ligand hydrogen linked to liglink1 to be deleted upon covalent link
-set qmligl   CG311  ! Force field atom type for liglink1 for qm/mm calculation
+set covalent false
+!set covresn  cys    ! Cys (can be Ser or Tyr)
+!set covresi  145    ! Cys145
+!set covseg   1      ! Protein segment number
+!set liglink1 C57    ! Ligand atom that links covalently
+!set liglink2 H32    ! Ligand hydrogen linked to liglink1 to be deleted upon covalent link
+!set qmligl   CG311  ! Force field atom type for liglink1 for qm/mm calculation
 
 ! Set number of flexible residues and their identity
 ! The below variables are ignored if flexibledocking=false
@@ -105,24 +123,62 @@ set qmligl   CG311  ! Force field atom type for liglink1 for qm/mm calculation
 ! flex21: Identity of 1st flexible residue in segment 2
 ! ...
 ! NOTE: Number of protein segments is given by proteinunit (above)
-set numflex1 1
-set flex11 145
+set numflex1 0
+!set flex11 145
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! The following options relate to ligand MD before docking
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! The following options relate to ligand MD-SA/MC-SA before docking
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MKCONFS - If true, perform MD-SA and MC SA to produce multilpe 
+! conformations. Then cluster them by tosionals.
+set mkconfs false
 
+! MAXCONF - Number of conformations to produce before clustering
+set maxconf 100 ! RS - for short test !100
+
+! VACCLUSTERWIDTH - Between 0.0 and 1.0:
+! Treshhold for TFD clustering of conformers
+set vacclusterwidth 0.2 ! RS - for short test ! 0.2
+
+!!! MD-SA options
+! MAXLIGMDTEMP - If mkconfs=true, highest tempertue in MD-SA
+set maxligmdtemp 800.0
+
+! MINLIGMDTEMP - If mkconfs=true, lowest tempertue in MD-SA
+set minligmdtemp 300.0
+
+! LIGMDSTEPS - If mkconfs=true, the number of MD steps used to prepare ligand
+set ligmdsteps 1000 ! RS - for short test ! 10000
+
+! LIGMDYCLES - Number of annealing heating and cooling steps
+set ligmdycles 5
+
+! LIGTIMESTEP - The time step used in SAMD
+set ligtimestep 0.001
+
+!!! MC-SA options
 ! MAXLIGMCTEMP - The maximum random temperature for the high
 ! temp MC in the ligand preparation process
-set maxligmctemp 800.0
+! If mkconfs=true, highest tempertue in MC-SA
+set maxligmctemp 800.0 ! 600.0 !800.0
 
 ! MINLIGMCTEMP - The minimum random temperature for the high
 ! temp MC in the ligand preparation process
-set minligmctemp 300.0
+! If mkconfs=true, lowest tempertue in MC-SA
+set minligmctemp 300.0 !100.0 !300.0
 
 ! LIGMCSTEPS - The number of MC steps used to prepare ligand
-set ligmcsteps 1000
+set ligmcsteps 1000 ! RS - for short test ! 10000 !1000
 
+! LIGMCYCLES - Number of annealing heating and cooling steps
+set ligmcycles 5
+
+! The below are used for energy, minimization, and nbond statements
+set ligctnb  999.0
+set ligctfnb 998.0
+set ligctonb 996.0
+set ligeps 1.0         ! Dielectric constant in classical calc.
+set ligdielec cdie     ! rdie or cdie
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! The following options relate to protein:ligand MD
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -140,7 +196,7 @@ set numheatsteps 5000
 
 ! HEATTEMP - The heating temperature of the samd
 ! dynamics 
-set heattemp 800.0
+set heattemp 600.0
 
 ! NUMCOOLSTEPS - The number of cooling steps that samd 
 ! dynamics should take 
@@ -162,8 +218,15 @@ set cooltemp 100.0
 ! MC is used for standard docking if requested. 
 ! to all docking.
 set mcflag    true  ! For standard docking
-set mcsteps 100000  ! For all MC docking
+set mcsteps  100000  ! RS - for short test !100000  ! For all MC docking
 set mctemp   300.0  ! For all MC docking
+set mcmin    false  ! Use lowest energy, instead of final MC structure (not in annealing)
+! If MC annealing (not compatible with mcmin)
+set mcsa true
+set mchtemp  600.0  ! High MC docking (in annealing)
+set mcltemp  100.0  ! Low MC temperature (in annealing)
+set mcycles      5  ! Number of annealing heating and cooling steps
+set smartmc   true  ! Allows concerted dihedral MC moves
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! End MC options
@@ -175,13 +238,18 @@ set mctemp   300.0  ! For all MC docking
 
 ! Number of minimization steps: general, full MM (rigid protein
 ! but no grid), QM (rigid protein but no grid)
-set mstep 500
-set mmstep 500
-set qmstep 50
+set mstep 100
+set mmstep 100
+set qmstep 50 ! RS: short test 50
 calc mprint @mstep/10
 calc mmprint @mmstep/10
 calc qmprint @qmstep/10
-set minradius 5.0
+if @silent .eq. true then
+  set mprint @mstep
+  set mmprint @mmstep
+  set qmprint @qmstep
+endif
+set minradius 0.5 ! RS - not sure if needed
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! End minimization options
@@ -192,11 +260,11 @@ set minradius 5.0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! MAXIT - The maximum number of iteration per ligand 
-set maxit 10
+set maxit 25 ! RS - short test !10
 
 ! MAXMIT - The number of microiterations per ligand
 ! Total number of docking cycles is maxit*maxmit
-set maxmit 10
+set maxmit 10 ! RS - short test !10
 
 ! Max rotation angle
 set maxrotangle 360 
@@ -204,22 +272,46 @@ set maxrotangle 360
 ! HARMFORCE - The force constant to use for consensus docking in the 
 ! cons harm command. Consensus atoms must be defined in 
 ! consensus_docking.str 
-set harmforce 0.00
+!set harmforce 0.00 ! 30.00
+! RS: consensus docking is called with 'mass' keyword, so the force is
+! multiplied by atomic mass of relevant atom. For carbon: 12.011
+calc harmforce = 0.00 / 12.011 ! for actual force of 0.00
+
+! Consensus Docking Options (User definse matcing atom names)
+set cons_docking false !true
+
+! Fingerprint Docking Options
+set fp_docking true ! default: false
+! fpknownorder - if false: reorder ligands to maximize number of common atoms
+set fpknownorder true ! false
+! fpmode:
+!    seed: compare all to the first ligand
+!    seq: compare each ligand to the previous ligand
+set fpmode seq ! seed
+! fromexp - if true align liands to ligand_0 that is not redocked
+! (should be the crystal structure position)
+set fromexp true ! false
+! fpseed when reorder ligands the user can select the first ligand
+set fpseed 0 ! 0 for auto-detection if fromexp==False
+! anyele - if False, check elements when comparing
+!          if True, match any heavy atom with each other
+set anyele False ! True to match any heavy atom with each other.
+! End of Fingerprint Docking Options
 
 ! USEQMMM - Whether or not the current computation should use 
 ! QM/MM for the ligand or not 
-set qmmm true
+set qmmm false
 
 ! CHARGE - The charge on the ligand (use for QMMM)
 ! Since different ligands have different charges, must specify for all ligands
-set qmcharge1 0    ! ligand
-set npqchem 4      ! # of cores to use with Q-Chem
+set qmcharge1  0   ! 2-bornyl cation
+set npqchem 8      ! # of cores to use with Q-Chem
 
 ! Whether or not the current computation should use implicit solvation or not
 ! GBSW or PBEQ (not both)
-set isolv true
+set isolv false
 set gbsw  false
-set pbeq  true
+set pbeq  false
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Cutoff, grid etc
@@ -235,7 +327,7 @@ set dielec rdie     ! rdie or cdie
 set griddielec rdie ! rdie or cdie
 set mmeps 3.0       ! Dielectric constant in mm
 set mmdielec rdie   ! rdie or cdie
-set qmeps 3.0       ! Dielectric constant in qm/mm
+set qmeps 1.0       ! Dielectric constant in qm/mm
 set qmdielec cdie   ! Should only be cdie
 
 ! Softcore options
@@ -251,18 +343,18 @@ set usegrid true
 ! gridone - Determines if the grid has already been made, can
 ! be set to true or false
 ! NOTE: Grids done with rigid or flexible docking are different!
-set gridone false
+set gridone false !true
 
 ! deltagrid - Spacing between neighboring points on the potential 
 ! energy grid.
-set deltagrid 0.5 !0.1
+set deltagrid 0.25 ! RS - short test !0.1
 
 ! The below are used for defining the grid location, these must be changed
 ! for each different protein! If not defined, defaults to geometric center
 ! of first ligand.
-!set bsitex = -20.918
-!set bsitey =  -6.775
-!set bsitez = -26.204
+set bsitex =  42.9
+set bsitey =  46.3
+set bsitez =  47.9
 set gridsize = 30.0 
 
 set gridname @runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_grid
@@ -270,7 +362,7 @@ set gridname @runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_grid
 ! Max translation (x,y,z) of ligand in active site
 ! Since grid size if 2*gridsize, maxtrans can be 
 ! 0.5*gridsize which should be reasonable safe and inside grid
-set maxtrans 2.0
+set maxtrans 5.0
 
 !**********************************************************
 !*               End userparam.str                        *
@@ -281,7 +373,7 @@ set maxtrans 2.0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 set cluster true
-set clusterwidth 1.0
+set clusterwidth 2.0
 
 return
 
