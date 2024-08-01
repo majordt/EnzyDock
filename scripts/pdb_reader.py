@@ -1,4 +1,4 @@
-#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+#!/home/charmm-gui/local/miniconda3/bin/python
 # To test stand alone: /home/qnt/shani/anaconda3/bin/python pdb_reader.py 4okz.pdb 4okz.pdb
 # This script built mainly for TPS family, note that work fine with others ligands and cofactors. 
 # 

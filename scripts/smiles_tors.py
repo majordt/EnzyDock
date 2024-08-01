@@ -1,4 +1,4 @@
-#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+#!/home/charmm-gui/local/miniconda3/bin/python
 # Copyright © 2022 Dan T. Major
 
 import sys
@@ -31,24 +31,24 @@ def print_part1(file):
 ! the second atom in the definition. The MC module doesn't care about which atoms are fixed.
 ! So, if we have a covalently docked ligand via a Cys-S-C-…-X-Y-Z-W-… link, all MC moves MUST be defined 
 ! "outwards" and "away" from the Cys residue. Otherwise, the MC module will move the Cys residue itself!!!
-! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y  @debugshow end -
-!                                                              sele atom ligand_@currligand 1 Z  @debugshow end
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y  show end -
+!                                                              sele atom ligand_@currligand 1 Z  show end
 set ntors 0
 
 if covalent .eq. true then
-! move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink0 @debugshow end -
-!                                                              sele atom FLX@{covseg} 1 @protlink1 @debugshow end
-! move add mvtp tors weight 2.00 dmax 180.0 label tr2  fewer 0 sele atom FLX@{covseg} 1 @protlink1 @debugshow end -
+! move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink0 show end -
+!                                                              sele atom FLX@{covseg} 1 @protlink1 show end
+! move add mvtp tors weight 2.00 dmax 180.0 label tr2  fewer 0 sele atom FLX@{covseg} 1 @protlink1 show end -
 
- move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink1 @debugshow end -
-                                                              sele atom ligand_@currligand 1 @liglink1 @debugshow end
+ move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink1 show end -
+                                                              sele atom ligand_@currligand 1 @liglink1 show end
 ! incr ntors by 2
  incr ntors by 1
 endif
 
 ! Additional torsional definitions below
-!! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... @debugshow end sele ... @debugshow end\n
-! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... @debugshow end sele ... @debugshow end\n''')
+!! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... show end sele ... show end\n
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... show end sele ... show end\n''')
 
 def print_part2(file):
     file.write(
@@ -180,10 +180,10 @@ def smiles_tors():
 #           j = k + 3
            j = k + ncov + 1 #RS
            line = "move add mvtp tors weight 1.00 dmax 180.0 label tr" + str(j) + " fewer 0 sele atom ligand_@currligand 1 " \
-                   + str(atom1) + " @debugshow end -\n"
+                   + str(atom1) + " show end -\n"
            file.write(line)
            line = "                                                            sele atom ligand_@currligand 1 " \
-                  + str(atom2) + " @debugshow end\n"
+                  + str(atom2) + " show end\n"
            file.write(line)
            k += 1
         else:

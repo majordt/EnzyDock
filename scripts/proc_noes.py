@@ -236,7 +236,6 @@ def pep_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k
         line = "if @in1 .eq. pep then\n"
         line += simple_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k)
         line += "else\n"
-        line += "   if @in1 .ne. vac then\n"
         if flex_pep_a and rigid_pep_b:
             line += simple_mk_pnoe(b_x, b_y, b_z, flex_segid_a, flex_resid_a, type_a, rmin, rmax, k)
         elif flex_pep_b and rigid_pep_a:
@@ -245,21 +244,18 @@ def pep_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k
             line += simple_mk_pnoe(b_x, b_y, b_z, segid_a, resid_a, type_a, rmin, rmax, k)        
         elif rigid_pep_a and (not flex_pep_b): # rigid prot to lig/cof
             line += simple_mk_pnoe(a_x, a_y, a_z, segid_b, resid_b, type_b, rmin, rmax, k)        
-        line += "   endif\n"
         line += "endif\n"
         #write regular pnoe line when flex but when pep write noe 
     elif nupeprigid==0: #at least one flex pep
         line = "if @in1 .eq. pep then\n"
         line += simple_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k)
         line += "else\n"
-        line += "   if @in1 .ne. vac then\n"
         if flex_pep_a and (not flex_pep_b):
             line += simple_mk_noe(flex_segid_a, flex_resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k)
         elif flex_pep_b and (not flex_pep_a):
             line += simple_mk_noe(segid_a, resid_a, type_a, flex_segid_b, flex_resid_b, type_b, rmin, rmax, k)
         elif flex_pep_a and flex_pep_b:
             line += simple_mk_noe(flex_segid_a, flex_resid_a, type_a, flex_segid_b, flex_resid_b, type_b, rmin, rmax, k)
-        line += "   endif\n"
         line += "endif\n"
     return line
 
@@ -268,10 +264,6 @@ def mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k, fl
         line = pep_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k, flex, atoms)
         if line == None:
             return
-    elif not (("lig" in segid_a.lower()) and ("lig" in segid_b.lower())):
-        line = "if @in1 .ne. vac then\n"
-        line += simple_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k)
-        line += "endif\n"
     else:
         line = simple_mk_noe(segid_a, resid_a, type_a, segid_b, resid_b, type_b, rmin, rmax, k)
     return line

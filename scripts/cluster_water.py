@@ -1,4 +1,4 @@
-#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+#!/home/charmm-gui/local/miniconda3/bin/python
 # To test as standalone use:
 # cluster_water.py <int> outfile.pdb
 # 

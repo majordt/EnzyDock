@@ -1,4 +1,4 @@
-#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+#!/home/charmm-gui/local/miniconda3/bin/python
 # RS: superpose_cluster_ligands as part of EnzyDock
 # RS: compare to cluster_ligands.py, aviod duplicates of functions. Include symmetry.
 # To test as standalone use:

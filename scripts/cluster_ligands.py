@@ -1,4 +1,4 @@
-#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
+#!/home/charmm-gui/local/miniconda3/bin/python
 # To test as standalone use:
 # cluster_ligands.py 1 cotb2_wt 5 5 1.0 1
 # RS: add align option to get_rmsd() function, for vacuum conformers
