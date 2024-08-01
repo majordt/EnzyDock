@@ -11,7 +11,7 @@ cons harm clear
 ! RS: Omit
 ! Reapply restraints to cofactors
 !if @numcofactor .gt. 0 then
-!   cons harm force @kcf sele cofactors .and. .not. hydrogen @debugshow end
+!   cons harm force @kcf sele cofactors .and. .not. hydrogen show end
 !endif
 !cons rmsd clear
 cons cldh

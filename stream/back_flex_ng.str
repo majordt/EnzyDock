@@ -30,8 +30,8 @@ label ng_bfunit_loop
       if @cflag .eq. false then
         define bflex sele type O .or. type CA .or. type HN .or. type HA end   ! Bare backbone without terminal atoms
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
-           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) show end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
         endif
       endif
      endif
@@ -46,8 +46,8 @@ label ng_bfunit_loop
       if @cflag .eq. false then   
         define bflex sele type N .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + N
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
-           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) show end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
         endif
       endif
      endif
@@ -56,14 +56,14 @@ label ng_bfunit_loop
       if @cflag .eq. true then   
         define bflex sele type C .or. type O .or. type CA .or. type HN .or. type HA end   ! Bare bone + C
         if @{kbf_flag} .eq. false then
-           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) @debugshow end
-           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) @debugshow end
+           cons harm force @kbf sele bflex .and. (segi pep@b .and. resi @flex@@b@@c) show end
+           !cons harm force @kbf sele bflex .and. (segi FLX@b .and. resi @c) show end
         endif
       endif
      endif
 
-     define fback sele fback .or. (bflex .and. (segi pep@b .and. resi @flex@@b@@c)) @debugshow end
-     !define fback sele fback .or. (bflex .and. (segi FLX@b .and. resi @c)) @debugshow end
+     define fback sele fback .or. (bflex .and. (segi pep@b .and. resi @flex@@b@@c)) show end
+     !define fback sele fback .or. (bflex .and. (segi FLX@b .and. resi @c)) show end
 
      incr c
 
@@ -77,9 +77,7 @@ if b .le. @proteinunit goto ng_bfunit_loop
 
 set kbf_flag true
 
-if @debug .eq. true then
-   print cons
-endif
+print cons
 
 return
 

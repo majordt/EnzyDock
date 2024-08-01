@@ -16,8 +16,6 @@ if proteinunit .lt. 1 stop
 
 ! Additional variables
 if @?silent             .eq. 0 set silent true
-if @?debug              .eq. 0 set debug false
-if @?renew              .eq. 0 set renew false
 if @?bomblevel          .eq. 0 set bomblevel 0
 if @?charmmgui          .eq. 0 set charmmgui false
 if @?{prepare_ligands}  .eq. 0 set prepare_ligands false 
@@ -372,47 +370,6 @@ else
       stop
    endif
 endif
-if @{fp_docking} .eq. true then
-   ! check if user supplied csv file with matching atoms:
-   bomlev -1
-   open unit 101 read form name @stdDIR/user_consensus.csv
-   bomlev @bomblevel
-   if ?iostat .ne. -1 then
-     close unit 101
-     ! csv file exsits; reordering is not possible,
-     ! anyele, fpseed are meaningless
-     set fpknownorder true
-     set anyele true
-     set fpseed 0
-   endif
-
-   !RS: add some checkes for sensible definitions
-   !set fpmax 0.5 ! If greater than 0.5 A, apply force
-   if @?fpmax              .eq. 0 set fpmax 0.5
-   if @?fpknownorder       .eq. 0 set fpknownorder true
-   if @?fpmode             .eq. 0 set fpmode seed ! can be seq
-   if @?fromexp            .eq. 0 set fromexp false
-   if @?anyele             .eq. 0 set anyele false
-   if @?fpseed             .eq. 0 then
-      set fpseed 0 ! 0 for auto-detection only of fromexp==False
-   else
-      if @fpseed .gt. @numligands then
-         echo EnzyDock WARNING: fpseed is greater than the number of ligands
-         ! Update readable log file
-!        open append unit 33 form name enzydock.log
-         write title unit 33
-* EnzyDock WARNING: fpseed is greater than the number of ligands
-* Terminating EnzyDock run...
-*
-      close unit 33
-      stop
-      endif
-   endif
-   if @?multseed        .eq. 0 set multseed true
-endif
-if @?minmaxrotangle     .eq. 0 set minmaxrotangle 15
-if @?minmaxtrans        .eq. 0 set minmaxtrans 0.2
-if @?multseed           .eq. 0 set multseed false
 
 ! Implicit/explicit solvation tests (must choose either GBSW or PBEQ or explicit)
 if isolv .eq. true then
@@ -526,12 +483,6 @@ if @silent .eq. true then
   set mprint @mstep
   set mmprint @mmstep
   set qmprint @qmstep
-endif
-
-if @debug .eq. true then
-  set debugshow show
-else
-  set debugshow   ! empty string
 endif
 
 stream @strDIR/mk_userrestraints.str

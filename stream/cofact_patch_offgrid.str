@@ -37,7 +37,7 @@ set c 1
 
 label assign_cofact_patch_mm
 
-    define cofactors sele cofactors .or. segi COF@c @debugshow end
+    define cofactors sele cofactors .or. segi COF@c show end
 
     incr c
 

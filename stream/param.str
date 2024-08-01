@@ -31,7 +31,7 @@ set scrDIR       @DIR/scr                            ! Scratch disk for current 
 set scr1DIR      /var/spool/scratch/xxxx/enzydock/scr ! Multiple project scratch
 set scr2DIR      /var/spool/scratch/xxxx/enzydock/scr ! Multiple project scratch
 set docDIR       @DIR/dock                           ! The dock directory that holds all files
-set cgenff       /home/qnt/renanak/cgenff/silcsbio.2023.1/cgenff/cgenff ! cgenff
+set cgenff       /private/chem/silcsbio.2022.1/cgenff/cgenff ! cgenff
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! RTF and PRM files

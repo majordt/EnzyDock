@@ -19,7 +19,7 @@ if ?iostat .ne. -1 then
    read coor pdb unit 1 offset @NumObject
    close unit 1     
    set water true
-   define flexwat sele segid CWAT @debugshow end
+   define flexwat sele segid CWAT show end
    set tagcwat true
 else
    echo "EnzyDock WARNING: Water requested but no pdb file found..."

@@ -32,20 +32,6 @@ if @charmmgui .eq. true then
    read para unit 10 card flex
    close unit 10
 
-   stream @topDIR/toppar_water_ions.str
-   
-   bomlev -1
-   !read topology
-   open read card unit 10 name @topDIR/top_all36_cgenff.rtf
-   read rtf card unit 10 append
-   close unit 10
-   
-   !read parameters
-   open read card unit 10 name @topDIR/par_all36_cgenff.prm
-   read param card unit 10 flex append
-   close unit 10
-   
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    stream @strDIR/read_protein.str
 
    set pun 1

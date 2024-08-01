@@ -28,7 +28,7 @@ endif
 bomlev @bomblevel
 
 ! "_" is dummy variable
-define _ sele .not. init @debugshow end
+define _ sele .not. init show end
 
 !***********************************************************
 !*                 End setup_protein.str

@@ -19,7 +19,7 @@ open unit 1 form read name @pdbDIR/waterin.pdb
    read coor pdb unit 1 offset @NumObject
    close unit 1     
    set water true
-   define flexwat sele segid WTIN @debugshow end
+   define flexwat sele segid WTIN show end
 !else
 !   echo "EnzyDock WARNING: Water requested but no pdb file found..."
 !endif

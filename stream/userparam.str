@@ -277,26 +277,6 @@ set maxrotangle 360
 ! multiplied by atomic mass of relevant atom. For carbon: 12.011
 calc harmforce = 0.00 / 12.011 ! for actual force of 0.00
 
-! Consensus Docking Options (User definse matcing atom names)
-set cons_docking false !true
-
-! Fingerprint Docking Options
-set fp_docking true ! default: false
-! fpknownorder - if false: reorder ligands to maximize number of common atoms
-set fpknownorder true ! false
-! fpmode:
-!    seed: compare all to the first ligand
-!    seq: compare each ligand to the previous ligand
-set fpmode seq ! seed
-! fromexp - if true align liands to ligand_0 that is not redocked
-! (should be the crystal structure position)
-set fromexp true ! false
-! fpseed when reorder ligands the user can select the first ligand
-set fpseed 0 ! 0 for auto-detection if fromexp==False
-! anyele - if False, check elements when comparing
-!          if True, match any heavy atom with each other
-set anyele False ! True to match any heavy atom with each other.
-! End of Fingerprint Docking Options
 
 ! USEQMMM - Whether or not the current computation should use 
 ! QM/MM for the ligand or not 

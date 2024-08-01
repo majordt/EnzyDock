@@ -12,8 +12,8 @@ move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label atrn sele segid ligand_
 move add mvtp rrot byresidue weight 1.00 dmax 30.0 label arot sele segid ligand_@currligand end
 
 ! Torsional rotations in ligand. Lines below first must be modified manually.
-!move add mvtp tors weight 1.00 dmax 180.0 label tr1  fewer 0 sele atom FLX1 1 @protlink1 @debugshow end sele atom ligand_@currligand 1 @atomlink1 @debugshow end
-!move add mvtp tors weight 1.00 dmax 180.0 label tr16 fewer 0 sele atom ligand_@currligand 1 O31 @debugshow end sele atom ligand_@currligand 1 C32 @debugshow end
+!move add mvtp tors weight 1.00 dmax 180.0 label tr1  fewer 0 sele atom FLX1 1 @protlink1 show end sele atom ligand_@currligand 1 @atomlink1 show end
+!move add mvtp tors weight 1.00 dmax 180.0 label tr16 fewer 0 sele atom ligand_@currligand 1 O31 show end sele atom ligand_@currligand 1 C32 show end
 
 ! Only select waters near ligand
 if tagwexp .eq. true then

@@ -36,6 +36,6 @@ else
    set expl false
    define explwat sele none end
 endif
-define flexwat sele flexwat .or. explwat @debugshow end
+define flexwat sele flexwat .or. explwat show end
 
 return

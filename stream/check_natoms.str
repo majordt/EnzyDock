@@ -6,7 +6,7 @@
 * due to problems with the dimentions of allocated QM arrays.
 * 
 
-define ligand sele segid ligand_@currligand @debugshow end
+define ligand sele segid ligand_@currligand show end
 if @currligand .eq. 1 then
    set nchange false
    set pren ?nsel
@@ -52,10 +52,9 @@ label natoms_patch
    endif
    
    ! If patching between ligand and cofactor
-   ! RS: wil handle
-   !if @{patch_lig_cofact} .eq. true then
-   !   set nchange true
-   !endif
+   if @{patch_lig_cofact} .eq. true then
+      set nchange true
+   endif
 
 goto after_natoms_patch 
 

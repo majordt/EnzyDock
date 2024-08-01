@@ -28,10 +28,8 @@ bomlev -1
 open read unit 1 form name @resDIR/lig_mindock_1.crd
 read coor card unit 1 comp
 
-if @debug .eq. true then
-   print coor
-   print coor comp
-endif
+print coor
+print coor comp
 
 bomlev -1
 open unit 101 read form name @stdDIR/consensus_def.str

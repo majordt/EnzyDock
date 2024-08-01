@@ -22,21 +22,19 @@ label segment_loop
    read coor pdb unit 1 offset @offset
    close unit 1
 
-   if @debug .eq. true then
-      print coor sele all end
-   endif
+   print coor sele all end
 
    ! ATTEMPT TO PLACE ANY MISSING HEAVY ATOMS
    ic purge
    ic param
    ic fill preserve
    ic build
-   define test sele ( .not. type H* ) .and. ( .not. init ) @debugshow end
+   define test sele ( .not. type H* ) .and. ( .not. init ) show end
 
    ! REBUILD ALL H ATOM COORDS
    coor init sele type H* end
    hbuild sele type H* end
-   define test sele .not. init @debugshow end
+   define test sele .not. init show end
 
    autogen angle dihedral
 

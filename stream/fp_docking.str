@@ -40,15 +40,14 @@ bomlev @bomblevel
 ! If no reference atoms found, skip to end
 if numrefatom .lt. 1 goto skip_fp_cons
 
-! Moved to param_set_check
-!set fpmax 0.5 ! If greater than 0.5 A, apply force
+set fpmax 0.5 ! If greater than 0.5 A, apply force
 set i 1
 label fp_loop
 
    noe
       assign cnox @xfpatom@@i cnoy @yfpatom@@i cnoz @zfpatom@@i -
           select segid LIGAND_@currligand .and. type @latom@@i end -
-          kmin 0.0 rmin 0.0 kmax @harmforce rmax @fpmax fmax @harmforce
+          kmin 0.0 rmin 0.0 kmax @harmforce rmax @fpmax fmax 100.0
    end
    incr i
 
