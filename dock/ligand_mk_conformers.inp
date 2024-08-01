@@ -61,14 +61,12 @@ if @covalent .eq. true set cflag true
 set covalent false
 
 ! RS: debug
-if @debug .eq. true then
-   print cons
-endif
+print cons
 ! minimize, save structure as starting point
 ! RS: comp array is written when dyna exits (see charmm docs).
 ! Consider using scalar arrays 1-3 for xyz or second comp array
 mini abnr nstep 100
-define ligand sele segid ligand_@currligand @debugshow end
+define ligand sele segid ligand_@currligand show end
 open write unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
 write coor unit 1 card
 * CHARMM Energy = ?ener kcal/mol
@@ -99,15 +97,10 @@ label get_conformer
    open read unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
    read coor unit 1 card
    close unit 1
-   define ligand sele segid ligand_@currligand @debugshow end
+   define ligand sele segid ligand_@currligand show end
    
    stream @strDIR/seed.str
    
-   set vacsamd false
-   if @samd .eq. true set vacsamd true
-   if @ntors .eq. 0 set vacsamd true
-      
-   if @vacsamd .eq. true then
       ! Heating
       set mdtemp0 @minligmdtemp
       label vac_md_heat
@@ -160,8 +153,8 @@ label get_conformer
    
       if mdtemp0 .ge. @minligmdtemp goto vac_md_cool
 
-      ! End of MD simulated annealing
-   endif 
+   ! End of MD simulated annealing
+   
    if @ntors .eq. 0 goto write_mdmc_min
    ! RS: needed?
    !if @ligmcflag .ne. true goto write_mdmc_min
@@ -302,24 +295,3 @@ label vac_ligand_minimize
 
 goto after_vac_ligand_minimize
 
-! python for scope
-!vars = ["ctfnb", "ctnb", "ctonb",
-!        "dielec", "eps", "maxconf", "vacclusterwidth"
-!        "mchtemp", "mcltemp", "mcsteps", "mcycles",
-!        "mdhtemp", "mdltemp", "mdsteps", "mdycles"]
-!
-!d = {"ctfnb":"998.0", "ctnb":"999.0", "ctonb":"996.0",
-!     "dielec":"cdie", "eps":"1.0", "maxconf":"100",
-!     "vacclusterwidth":"1.0",
-!     "mchtemp":"600.0", "mcltemp":"100.0",
-!     "mcsteps":"10000", "mcycles":"5",
-!     "mdhtemp":"800.0", "mdltemp":"300.0",
-!     "mdsteps":"10000", "mdycles":"5"}
-!
-!for v in vars:
-!    print("if @?"+v+" .ne. 0 then\nset org"+v+" @"+v+"\nendif")
-!    print("set "+v+" "+d[v])
-!print()
-!for v in vars:
-!    print("if @?org"+v+" .ne. 0 then\nset "+v+" @org"+v+"\nendif")
-!

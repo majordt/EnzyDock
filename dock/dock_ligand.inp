@@ -44,7 +44,7 @@ label dock_microiter
     goto readligstruct
     label after_readligstruct
 
-    define ligand sele segid ligand_@currligand @debugshow end 
+    define ligand sele segid ligand_@currligand show end 
 
     goto vac_trans
     label after_vac_trans
@@ -90,22 +90,22 @@ label dock_microiter
     define cofactors sele none end
     set c 1
     label assign_cofact_dl
-        define cofactors sele cofactors .or. segi COF@c @debugshow end
+        define cofactors sele cofactors .or. segi COF@c show end
         incr c
     if c .le. @numcofactor goto assign_cofact_dl
     ! waters
     define flexwat sele none end
     if @usegrid .eq. true then
        if @tagwtin .eq. true then
-          define flexwat sele segid WTIN @debugshow end
+          define flexwat sele segid WTIN show end
        endif
     else
        if @tagcwat .eq. true then
-          define flexwat sele segid CWAT @debugshow end
+          define flexwat sele segid CWAT show end
        endif
     endif
     if tagwexp .eq. true then
-      define flexwat sele flexwat .or. segid EWAT @debugshow end 
+      define flexwat sele flexwat .or. segid EWAT show end 
     endif
 
     ! treat restraints (cons, fix)
@@ -129,7 +129,7 @@ label dock_microiter
            stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
         endif
         cons fix sele none end
-        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) show end
     endif
    
     ! Do MC simulations without restraints
@@ -200,22 +200,22 @@ label dock_microiter
     define cofactors sele none end
     set c 1
     label assign_cofact_dlp
-        define cofactors sele cofactors .or. segi COF@c @debugshow end
+        define cofactors sele cofactors .or. segi COF@c show end
         incr c
     if c .le. @numcofactor goto assign_cofact_dlp
     ! waters
     define flexwat sele none end
     if @usegrid .eq. true then
        if @tagwtin .eq. true then
-          define flexwat sele segid WTIN @debugshow end
+          define flexwat sele segid WTIN show end
        endif
     else
        if @tagcwat .eq. true then
-          define flexwat sele segid CWAT @debugshow end
+          define flexwat sele segid CWAT show end
        endif
     endif
     if tagwexp .eq. true then
-      define flexwat sele flexwat .or. segid EWAT @debugshow end
+      define flexwat sele flexwat .or. segid EWAT show end
     endif
 
     ! treat restraints (cons, fix)
@@ -239,7 +239,7 @@ label dock_microiter
            stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after patching (no grid)
         endif
         cons fix sele none end
-        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) show end
     endif
 
     ! Covalent link between ligand and cofactor
@@ -287,15 +287,6 @@ label dock_microiter
     ! RS: moved from below - contains cons harm clear
     ! DTM: added fingerprint docking
     if @{fp_docking} .eq. true then
-       set dofp false
-       if @fromexp .eq. true then
-          set dofp true
-       else
-          if @currligand .ne. 1 then
-             set dofp true
-          endif
-       endif
-       if @dofp .eq. true then
           ! Update readable log file
 !          open append unit 33 form name enzydock.log
           write title unit 33
@@ -303,7 +294,6 @@ label dock_microiter
 *
 !          close unit 33
           stream @strDIR/fp_docking.str
-       endif
     endif
     if @{cons_docking} .eq. true then
        if @currligand .ne. 1 then
@@ -350,11 +340,6 @@ label dock_microiter
     ! Only necessary when using grid
     if @usegrid .eq. true stream @strDIR/back_flex.str
 
-    !RS debug 30.05.23
-    print cons
-    noe
-       print
-    end
     ! Do Simulated Annealing Molecular Dynamics
     if @samd .eq. true stream @strDIR/samd.str
 
@@ -487,7 +472,7 @@ label redefine_dock
     define cofactors sele none end                                  
     set c 1                                                       
     label assign_cofact_df                                  
-        define cofactors sele cofactors .or. segi COF@c @debugshow end  
+        define cofactors sele cofactors .or. segi COF@c show end  
         incr c                                                    
     if c .le. @numcofactor goto assign_cofact_df            
     
@@ -495,15 +480,15 @@ label redefine_dock
     define flexwat sele none end
     if @usegrid .eq. true then
        if @tagwtin .eq. true then
-          define flexwat sele segid WTIN @debugshow end
+          define flexwat sele segid WTIN show end
        endif
     else
        if @tagcwat .eq. true then
-          define flexwat sele segid CWAT @debugshow end
+          define flexwat sele segid CWAT show end
        endif
     endif
     if tagwexp .eq. true then
-      define flexwat sele flexwat .or. segid EWAT @debugshow end
+      define flexwat sele flexwat .or. segid EWAT show end
     endif
 
     ! Do MC simulations without restraints
@@ -529,7 +514,7 @@ label redefine_dock
            stream @strDIR/define_flex_offgrid.str  ! Define flexible residue variables again after reading waters (no grid)
         endif
         cons fix sele none end
-        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) @debugshow end
+        cons fix sele .not. (ligand .or. cofactors .or. flexx .or. flexwat) show end
     endif
 
     ! Do MC simulations without restraints
@@ -623,27 +608,21 @@ label postminimize
    skipe none 
    
    ! RS: debug1 w/ cons
-   if @debug .eq. true then
-      print cons
-   endif
+   print cons
    mini sd nstep @mstep nprint @mprint
    
    ! Turn off consensus docking (if was called)
    if @harmforce .gt. 0.0 then
-      if @{fp_docking} .eq. false then
-         if @currligand .ne. 1 then
-            ! consatoms were defined in previous defenition
-            ! of consensus docking and psf hasn't changed after that.
-            ! same holds for comp array
-            !cons harm bestfit mass force 0.0 comp -
-            !   notrans norot sele consatoms end
+      if @currligand .ne. 1 then
+         ! consatoms were defined in previous defenition
+         ! of consensus docking and psf hasn't changed after that.
+         ! same holds for comp array
+         !cons harm bestfit mass force 0.0 comp -
+         !   notrans norot sele consatoms end
 
-            stream @strDIR/zero_consensus_docking.str
-            ! RS: debug1 w/o/ cons
-            if @debug .eq. true then
-               print cons
-            endif
-         endif
+         stream @strDIR/zero_consensus_docking.str
+         ! RS: debug1 w/o/ cons
+         print cons
       endif
      
       !!!stream @strDIR/clear_all_restraints.str

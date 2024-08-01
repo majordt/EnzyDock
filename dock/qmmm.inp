@@ -69,15 +69,31 @@ label qmmm_loop
    ! If charge not defined, detect here
    if @?{qmcharge@@currligand} .eq. 0 then
       coor dipole sele segi ligand_@currligand end
-      set @qmcharge@@currligand ?charge
+      set qmcharge@currligand ?charge
+      ! Round
+      set mynum @qmcharge@@currligand
+      if @mynum .gt. 0 then
+         calc mynum2 @mynum + 0.5
+         calc mynum int(@mynum2)
+      else
+         if @mynum .lt. 0 then
+            calc mynum2 @mynum - 0.5
+            calc mynum int(@mynum2)
+         else
+            set mynum 0
+         endif
+      endif
+      ! End of round
+      set qmcharge@currligand @mynum 
    endif
 
    if ?qchem .eq. 1 then
-      set 0 qmcharge@currligand
+      set 0 @qmcharge@@currligand
       !system "../scripts/write_qchem_inp.py @0"
       close unit 33
       system "../scripts/python_wrapper.sh ../scripts/write_qchem_inp.py @0"
       open append unit 33 form name enzydock.log
+
    ! RS: avoid problems with change in number of atoms
    else
       if @nchange .eq. true goto nc_natom_error
@@ -96,11 +112,11 @@ label qmmm_loop
    ! Remove restraints for final QM/MM minimization
 
    ! RS - moved from below ->
-   define ligand sele segid ligand_@currligand @debugshow end
+   define ligand sele segid ligand_@currligand show end
    set c 1
    define cofactors sele none end
    label read_qcofactors
-      define cofactors sele cofactors .or. segi COF@c @debugshow end
+      define cofactors sele cofactors .or. segi COF@c show end
       incr c
    if c .le. @numcofactor goto read_qcofactors
    ! <- RS - moved from below
@@ -108,7 +124,7 @@ label qmmm_loop
    ! RS (1 line) - check with LepI - before back_flex.str
    !stream @strDIR/clear_restraints.str
 
-   define QMS sele segid ligand_@currligand @debugshow end
+   define QMS sele segid ligand_@currligand show end
 
    ! Moved here   
    open unit 31 read form name @strDIR/useqmmm.str
@@ -123,7 +139,7 @@ label qmmm_loop
         if @numflex@@b .lt. 1 goto skip_define_qflex_loop1
          set c 1
          label define_qflex_loop2
-            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) @debugshow end
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
             incr c
          if c .le. @numflex@@b goto define_qflex_loop2
         label skip_define_qflex_loop1
@@ -132,11 +148,11 @@ label qmmm_loop
 
       if @flexibledocking .eq. true then
          !define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-         !        .or. type HN .or. type HA .or. type HA2) @debugshow end
+         !        .or. type HN .or. type HA .or. type HA2) show end
          define back sele flex .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) @debugshow end
+                 .or. type HN .or. type HA .or. type HA2) show end
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
-         define flexx sele flex .and. .not. back @debugshow end
+         define flexx sele flex .and. .not. back show end
          ! Backbone atoms are not flexible unless specifically defined as flexible
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
       endif
@@ -151,15 +167,15 @@ label qmmm_loop
       endif
 
       ! Define flexible region
-      define flexx sele flex .and. .not. back @debugshow end
+      define flexx sele flex .and. .not. back show end
 
    endif
   ! RS - move earlier ->
-!   define ligand sele segid ligand_@currligand @debugshow end
+!   define ligand sele segid ligand_@currligand show end
 !   set c 1
 !   define cofactors sele none end
 !   label read_qcofactors
-!      define cofactors sele cofactors .or. segi COF@c @debugshow end
+!      define cofactors sele cofactors .or. segi COF@c show end
 !      incr c
 !   if c .le. @numcofactor goto read_qcofactors
   ! <- RS - move earlier
@@ -173,7 +189,7 @@ label qmmm_loop
    ! If minimization radius is set, do minimization of nearby residues as well
    ! This definition overrides earlier fixes
    if @minradius .gt. 0.0 then
-      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) @debugshow end
+      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
       if ?nsel .gt. 0 then
          cons fix sele .not. flexradius end
       if ?nsel .gt. 0 then
@@ -208,7 +224,7 @@ label qmmm_loop
    endif
 
    open write unit 1 form name @resDIR/lig_qmmm_mindock_@currligand.crd
-   write coor card unit 1 sele QMS @debugshow end
+   write coor card unit 1 sele QMS show end
    *  qmel:  QM/MM electrostatic energy
    *  qmvdw: QM/MM vdW energy
    *  qmel     qmvdw    
@@ -217,7 +233,7 @@ label qmmm_loop
    *
 
    open unit 1 form write name @resDIR/lig_qmmm_mindock_@currligand.pdb
-   write coor pdb unit 1 sele QMS @debugshow end
+   write coor pdb unit 1 sele QMS show end
    *  qmel:  QM/MM electrostatic energy 
    *  qmvdw: QM/MM vdW energy
    *  qmel     qmvdw  
@@ -241,35 +257,35 @@ label qmmm_loop
 
       if @numcofactor .gt. 0 then
          open write unit 1 form name @resDIR/lig_co_flex_qmmm_mindock_@currligand.crd
-         write coor card unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+         write coor card unit 1 sele ligand .or. cofactors .or. flex show end
 
          open unit 1 form write name @resDIR/lig_co_flex_qmmm_mindock_@currligand.pdb
-         write coor pdb unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+         write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
          close unit 1
       endif
 
       open write unit 1 form name @resDIR/lig_flex_qmmm_mindock_@currligand.crd
-      write coor card unit 1 sele QMS .or. flex @debugshow end
+      write coor card unit 1 sele QMS .or. flex show end
 
       open unit 1 form write name @resDIR/lig_flex_qmmm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele QMS .or. flex @debugshow end
+      write coor pdb unit 1 sele QMS .or. flex show end
       close unit 1
 
       open write unit 1 form name @resDIR/flex_qmmm_mindock_@currligand.crd
-      write coor card unit 1 sele flex @debugshow end
+      write coor card unit 1 sele flex show end
 
       open unit 1 form write name @resDIR/flex_qmmm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele flex @debugshow end
+      write coor pdb unit 1 sele flex show end
       close unit 1
 
    endif
 
    if @numcofactor .gt. 0 then
       open write unit 1 form name @resDIR/lig_co_qmmm_mindock_@currligand.crd
-      write coor card unit 1 sele ligand .or. cofactors @debugshow end
+      write coor card unit 1 sele ligand .or. cofactors show end
 
       open unit 1 form write name @resDIR/lig_co_qmmm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele ligand .or. cofactors @debugshow end
+      write coor pdb unit 1 sele ligand .or. cofactors show end
       close unit 1
    endif
 

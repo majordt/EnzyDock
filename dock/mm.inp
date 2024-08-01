@@ -90,16 +90,12 @@ label mm_loop
 
          set c 1
          label flex_copy_loop
-            if @debug .eq. true then
-               print coor sele segi FLX@b .and. resi @c end
-               print coor sele segi pep@b .and. (resi @flex@@b@@c) end
-            endif
-            coor duplicate sele segi FLX@b .and. resi @c @debugshow end sele segi pep@b .and. (resi @flex@@b@@c) @debugshow end
-            if @debug .eq. true then
-               print coor sele segi pep@b .and. (resi @flex@@b@@c) end
-            endif
+            print coor sele segi FLX@b .and. resi @c show end
+            print coor sele segi pep@b .and. (resi @flex@@b@@c) show end
+            coor duplicate sele segi FLX@b .and. resi @c show end sele segi pep@b .and. (resi @flex@@b@@c) show end
+            print coor sele segi pep@b .and. (resi @flex@@b@@c) show end
 
-            dele atoms sele segi FLX@b .and. resi @c @debugshow end
+            dele atoms sele segi FLX@b .and. resi @c show end
             incr c
          if c .le. @numflex@@b goto flex_copy_loop
 
@@ -122,7 +118,7 @@ label mm_loop
 
          set c 1
          label define_flex_loop2
-            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) @debugshow end
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
             incr c
          if c .le. @numflex@@b goto define_flex_loop2
 
@@ -144,7 +140,7 @@ label mm_loop
 !   endif
 
 !   ! Define flexible region
-!   define flexx sele flex .and. .not. back @debugshow end
+!   define flexx sele flex .and. .not. back show end
 
    goto skip_mm_read_all   ! If grid was used, skip the next few lines
 
@@ -165,12 +161,12 @@ label mm_loop
    set c 1
    define cofactors sele none end
    label read_qcofactors
-      define cofactors sele cofactors .or. segi COF@c @debugshow end
+      define cofactors sele cofactors .or. segi COF@c show end
       incr c
    if c .le. @numcofactor goto read_qcofactors
 
    ! Remove harmonic restraints for final MM minimization, but read in NOEs
-   define ligand sele segid ligand_@currligand @debugshow end
+   define ligand sele segid ligand_@currligand show end
    stream @strDIR/clear_restraints.str
    bomlev -1
    open unit 101 read form name @stdDIR/userrestraints.str
@@ -192,7 +188,7 @@ label mm_loop
    ! Backbone atoms are not flexible unless specifically defined as flexible
    if @flexibledocking .eq. true then
       define back sele segi pep* .and. (type N .or. type C .or. type O .or. type CA -
-                    .or. type HN .or. type HA .or. type HA2) @debugshow end
+                    .or. type HN .or. type HA .or. type HA2) show end
    endif
 
  !  define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
@@ -205,14 +201,14 @@ label mm_loop
  !  endif
 
    ! Define flexible region
-  ! define flexx sele flex .and. .not. back @debugshow end
+  ! define flexx sele flex .and. .not. back show end
 
    cons fix sele none end
    if @flexibledocking .eq. true then
       if @flexibleback .eq. true then 
-         define flexx sele flex @debugshow end
+         define flexx sele flex show end
       else
-         define flexx sele flex .and. .not. back @debugshow end
+         define flexx sele flex .and. .not. back show end
       endif
       cons fix sele .not. (ligand .or. cofactors .or. flexx) end
    else
@@ -221,7 +217,7 @@ label mm_loop
    ! If minimization radius is set, do minimization of nearby residues as well
    ! This definition overrides earlier fixes
    if @minradius .gt. 0.0 then
-      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) @debugshow end
+      define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
       if ?nsel .gt. 0 then
          cons fix sele .not. flexradius end
       endif
@@ -253,7 +249,7 @@ label mm_loop
    calc intere = @intere0 + ?harm + ?noe 
 
    open write unit 1 form name @resDIR/lig_mm_mindock_@currligand.crd
-   write coor card unit 1 sele ligand @debugshow end
+   write coor card unit 1 sele ligand show end
    *  etot: total energy
    *  intere: interaction energy + restraint energy
    *  intere0: interaction energy
@@ -263,7 +259,7 @@ label mm_loop
    * 
 
    open unit 1 form write name @resDIR/lig_mm_mindock_@currligand.pdb
-   write coor pdb unit 1 sele ligand @debugshow end
+   write coor pdb unit 1 sele ligand show end
    *  etot: total energy
    *  intere: interaction energy + restraint energy
    *  intere0: interaction energy
@@ -288,34 +284,34 @@ label mm_loop
 
       if @numcofactor .gt. 0 then
          open write unit 1 form name @resDIR/lig_co_flex_mm_mindock_@currligand.crd
-         write coor card unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+         write coor card unit 1 sele ligand .or. cofactors .or. flex show end
 
          open unit 1 form write name @resDIR/lig_co_flex_mm_mindock_@currligand.pdb
-         write coor pdb unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+         write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
          close unit 1
       endif
 
       open write unit 1 form name @resDIR/lig_flex_mm_mindock_@currligand.crd
-      write coor card unit 1 sele ligand .or. flex @debugshow end
+      write coor card unit 1 sele ligand .or. flex show end
 
       open unit 1 form write name @resDIR/lig_flex_mm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele ligand .or. flex @debugshow end
+      write coor pdb unit 1 sele ligand .or. flex show end
       close unit 1
 
       open write unit 1 form name @resDIR/flex_mm_mindock_@currligand.crd
-      write coor card unit 1 sele flex @debugshow end
+      write coor card unit 1 sele flex show end
 
       open unit 1 form write name @resDIR/flex_mm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele flex @debugshow end
+      write coor pdb unit 1 sele flex show end
       close unit 1
    endif
 
    if @numcofactor .gt. 0 then
       open write unit 1 form name @resDIR/lig_co_mm_mindock_@currligand.crd
-      write coor card unit 1 sele ligand .or. cofactors @debugshow end
+      write coor card unit 1 sele ligand .or. cofactors show end
 
       open unit 1 form write name @resDIR/lig_co_mm_mindock_@currligand.pdb
-      write coor pdb unit 1 sele ligand .or. cofactors @debugshow end
+      write coor pdb unit 1 sele ligand .or. cofactors show end
       close unit 1
    endif
 

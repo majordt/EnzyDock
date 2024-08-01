@@ -39,7 +39,7 @@ label pbeq_loop
    read coor card unit 1 !offset @NumObject
    close unit 1
 
-   define QMS sele segid ligand_@currligand @debugshow end
+   define QMS sele segid ligand_@currligand show end
 
    if @flexibledocking .eq. true then
       define flex sele none end
@@ -48,7 +48,7 @@ label pbeq_loop
          if @numflex@@b .lt. 1 goto skip_define_pbeqflex_loop1
          set c 1
          label define_pbeqflex_loop2
-            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) @debugshow end
+            define flex sele flex .or. segi pep@b .and. (resi @flex@@b@@c) show end
             incr c
          if c .le. @numflex@@b goto define_pbeqflex_loop2
          label skip_define_pbeqflex_loop1
@@ -57,12 +57,12 @@ label pbeq_loop
 
       if @flexibledocking .eq. true then
          !define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-         !        .or. type HN .or. type HA .or. type HA2) @debugshow end
+         !        .or. type HN .or. type HA .or. type HA2) show end
          !RS
          define back sele segi pep* .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) @debugshow end
+                 .or. type HN .or. type HA .or. type HA2) show end
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
-         define flexx sele flex .and. .not. back @debugshow end
+         define flexx sele flex .and. .not. back show end
          ! Backbone atoms are not flexible unless specifically defined as flexible
  !        define back sele type N .or. type C .or. type O .or. type CA .or. type HN .or. type HA end
       endif
@@ -78,14 +78,14 @@ label pbeq_loop
       endif
 
       ! Define flexible region
-      define flexx sele flex .and. .not. back @debugshow end
+      define flexx sele flex .and. .not. back show end
 
    endif
-   define ligand sele segid ligand_@currligand @debugshow end
+   define ligand sele segid ligand_@currligand show end
    set c 1
    define cofactors sele none end
    label read_qcofactors
-      define cofactors sele cofactors .or. segi COF@c @debugshow end
+      define cofactors sele cofactors .or. segi COF@c show end
       incr c
    if c .le. @numcofactor goto read_qcofactors
 
@@ -122,7 +122,7 @@ label pbeq_loop
 
 !     stream @strDIR/clear_all_restraints.str
 !     if @minradius .gt. 0.0 then
-!        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) @debugshow end
+!        define flexradius sele .byres. (ligand .or. (ligand .around. @minradius)) show end
 !        if ?nsel .gt. 0 then
 !           cons fix sele .not. flexradius end
 !        endif
@@ -137,7 +137,7 @@ label pbeq_loop
 !     set gbswtot ?ener
 
      open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.crd
-     write coor card unit 1 sele QMS @debugshow end
+     write coor card unit 1 sele QMS show end
      *  dener: Electrostatic solvation energy difference (P+L-->PL)
      *  dener80: PL interaction energy in water  
      *  dener1: PL interaction energy in vacuum
@@ -150,7 +150,7 @@ label pbeq_loop
      *
 
      open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_pbeq_min_clust@iter_@currligand_@runid.pdb
-     write coor pdb unit 1 sele QMS @debugshow end
+     write coor pdb unit 1 sele QMS show end
      *  dener: Electrostatic solvation energy difference (P+L-->PL)
      *  dener80: PL interaction energy in water
      *  dener1: PL interaction energy in vacuum
@@ -178,15 +178,15 @@ label pbeq_loop
 
         if @numcofactor .gt. 0 then
            open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.crd
-           write coor card unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+           write coor card unit 1 sele ligand .or. cofactors .or. flex show end
 
            open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-           write coor pdb unit 1 sele ligand .or. cofactors .or. flex @debugshow end
+           write coor pdb unit 1 sele ligand .or. cofactors .or. flex show end
            close unit 1
         endif
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele QMS .or. flex @debugshow end
+        write coor card unit 1 sele QMS .or. flex show end
         *  dener: Electrostatic solvation energy difference (P+L-->PL)
         *  dener80: PL interaction energy in water
         *  dener1: PL interaction energy in vacuum
@@ -199,7 +199,7 @@ label pbeq_loop
         *
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele QMS .or. flex @debugshow end
+        write coor pdb unit 1 sele QMS .or. flex show end
         *  dener: Electrostatic solvation energy difference (P+L-->PL)
         *  dener80: PL interaction energy in water
         *  dener1: PL interaction energy in vacuum
@@ -213,20 +213,20 @@ label pbeq_loop
         close unit 1
 
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele flex @debugshow end
+        write coor card unit 1 sele flex show end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/flex_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele flex @debugshow end
+        write coor pdb unit 1 sele flex show end
         close unit 1
 
      endif
 
      if @numcofactor .gt. 0 then
         open write unit 1 form name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.crd
-        write coor card unit 1 sele ligand .or. cofactors @debugshow end
+        write coor card unit 1 sele ligand .or. cofactors show end
 
         open unit 1 form write name @resDIR/@currligand_@proj_cluster@iter/lig_co_pbeq_min_clust@iter_@currligand_@runid.pdb
-        write coor pdb unit 1 sele ligand .or. cofactors @debugshow end
+        write coor pdb unit 1 sele ligand .or. cofactors show end
         close unit 1
      endif
 

@@ -58,7 +58,7 @@ label read_ligand
    bomlev @bomblevel
 
    ! "_" is dummy variable
-   define _ sele .not. init @debugshow end
+   define _ sele .not. init show end
 
    bomlev @bomblevel 
 
@@ -114,11 +114,11 @@ label read_ligand
          close unit 1
 
          ! Compute all atom RMSD values
-         coor rms select segid LIGAND_@currligand @debugshow end
+         coor rms select segid LIGAND_@currligand show end
          set allrms = ?rms
 
          ! Compute the heavy atom RMSD values
-         coor rms select segid LIGAND_@currligand .and. .not. hydrogen @debugshow end
+         coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
          set hvyrms = ?rms
 
          write title unit 3 
@@ -150,7 +150,7 @@ label read_ligand
       close unit 1
 
       ! Compute the heavy atom RMSD values
-      coor rms select segid LIGAND_@currligand .and. .not. hydrogen @debugshow end
+      coor rms select segid LIGAND_@currligand .and. .not. hydrogen show end
       set hvyrms = ?rms
 
       write title unit 4 

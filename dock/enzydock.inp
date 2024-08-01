@@ -105,52 +105,6 @@ label no_lone_pair
     incr currligand
 if @currligand .le. @numligands goto no_lone_pair
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Reorder ligands if needed, to maximize number of common atoms
-! Uses RdKit MCS functionality
-if @{fp_docking} .eq. true then
-   ! User can use fp_docking for finding matching atoms without re-ordering 
-   if @fpknownorder .eq. false then
-      set 0 @fpknownorder
-      set 1 @fpmode
-      set 2 @numligands
-      set 3 1 !@currligand
-      set 4 @fromexp
-      set 5 @fpseed
-      set 6 @anyele
-      set 7 @runid
-      set 8 1 !@iter
-      !set 1 if not yet defined
-      set 9 false !@multseed
-      close unit 33
-      system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
-      ! for renaming 
-      open append unit 33 form name enzydock.log
-      stream @stpDIR/set_prot_patch.str
-      set fpknownorder true
-   endif
-endif
-
-! if docking to a template:
-if @{fp_docking} .eq. true then
-   if @fromexp .eq. true then
-      set 0 @fpknownorder
-      set 1 @fpmode
-      set 2 @numligands
-      set 3 1 !@currligand
-      set 4 @fromexp
-      set 5 @fpseed
-      set 6 @anyele
-      set 7 @runid
-      set 8 1 !@iter
-      !set 1 if not yet defined
-      set 9 false !@multseed
-      close unit 33
-      system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
-      open append unit 33 form name enzydock.log
-   endif
-endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! Gets the user bomblevel
 bomlev @bomblevel
@@ -292,7 +246,6 @@ set gridon false
 
 set mcwriteflag true   ! For now always true
 
-! RS: moved after prepare
 ! Fingerprint (fp) and concensus docking
 if @{fp_docking} .eq. true then
    ! Call to Python code goes here
@@ -302,42 +255,6 @@ if @{cons_docking} .eq. true then
 endif
 
 label read_newligand
-    
-    if @{fp_docking} .eq. true then
-       set callmcs false
-       if @fpmode .eq. seed then
-          if @currligand .eq. 2 then
-             set callmcs true
-             ! will calculate for all ligands
-          endif
-       else
-          if @fpmode .eq. seq then
-             if @fromexp .eq. true then
-                set callmcs true
-             else
-                if @currligand .ne. 1 then
-                   set callmcs true
-                endif
-             endif
-          endif
-       endif
-       if @callmcs .eq. true then
-          set 0 @fpknownorder
-          set 1 @fpmode
-          set 2 @numligands
-          set 3 @currligand
-          set 4 @fromexp
-          set 5 @fpseed
-          set 6 @anyele
-          set 7 @runid
-          set 8 1 !@iter
-          !set 1 if not yet defined
-          set 9 false !@multseed ! yet to min-energy. if desired, overwrite in later staegs
-          close unit 33
-          system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
-          open append unit 33 form name enzydock.log
-       endif 
-    endif
 
     ! Reads in a new ligand
 
@@ -376,7 +293,6 @@ label read_newligand
     goto write_dat
     label after_write_dat
 
-    set match_seed_vac false
     if @mkconfs .eq. true then
        ! CHARMM doesn't like this construct of if-inside-if
        !if ?nres .gt. 0 then dele atom
@@ -393,53 +309,8 @@ label read_newligand
 *
 !       close unit 33
 
-       if @multseed .eq. true then
-          if @currligand .gt. 1 then
-             set match_seed_vac true
-             ! TODO write file niters@currligand.str
-             if @{fp_docking} .eq. true then
-                if @fpmode .eq. seed then
-                   if @fromexp .eq. true then
-                      ! one pose for co-crystalized
-                      set maxit 1
-                   else
-                      ! nuber of poses for ligand 1 (seed)
-                      set pre = 1 
-                      stream nclusters@pre.str
-                      set maxit @ncluster
-                   endif
-                else
-                   ! fpmode != seed >> fpmode == seq
-                   calc pre = @currligand - 1 
-                   stream nclusters@pre.str
-                   set maxit @ncluster
-                endif
-             endif
-          else
-             ! currligand == 1
-             if @{fp_docking} .eq. true then
-                if @fromexp .eq. true then
-                   set match_seed_vac true
-                   ! one pose for co-crystalized
-                   set maxit 1
-                endif
-             endif 
-          endif
-       endif
-
-       if @{match_seed_vac} .ne. true then
-          stream ligand_mk_conformers.inp @mcwriteflag
-          stream niters@currligand.str
-       else
-          ! write niters@currligand.str
-          open write unit 44 form name niters@currligand.str
-          write title unit 44
-** Number of clusters
-**
-*set maxit = @maxit
-*
-          close unit 44
-       endif
+       stream ligand_mk_conformers.inp @mcwriteflag
+       stream niters@currligand.str
     endif
 
     label dock_iter
@@ -449,28 +320,6 @@ label read_newligand
        if ?nres .gt. 0 then dele atom
        ! RS: clear restraints
        !stream @strDIR/clear_all_restraints.str
-
-       if @{match_seed_vac} .eq. true then
-          if @{fp_docking} .eq. true then
-             set 0 @fpknownorder
-             set 1 @fpmode
-             set 2 @numligands
-             set 3 @currligand
-             set 4 @fromexp
-             set 5 @fpseed
-             set 6 @anyele
-             set 7 @runid
-             set 8 @iter
-             !set 1 if not yet defined
-             set 9 @multseed 
-             close unit 33
-             system "../scripts/python_wrapper.sh ../scripts/mcs_align_match.py @0 @1 @2 @3 @4 @5 @6 @7 @8 @9"
-             open append unit 33 form name enzydock.log
-          endif
-          set maxtrans @minmaxtrans
-          set maxrotangle @minmaxrotangle
-          stream match_seed_vac.inp @mcwriteflag
-       endif
 
        if @mkconfs .ne. true then
           ! Gets a random ligand conformer using HTMC and random rotations
@@ -485,6 +334,11 @@ label read_newligand
           stream ligand_simulate.inp @mcwriteflag
        endif
        set mcwriteflag false
+
+       ! Gets a random ligand conformer using HTMC and random rotations
+       ! mcwriteflag controls whether to write MC torsional files
+       !stream ligand_simulate.inp @mcwriteflag
+       !set mcwriteflag false
 
        ! Docks the random ligand structure using MC and SAMD
        ! Update readable log file
@@ -856,8 +710,8 @@ label check_water_on_grid
 
    define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
       .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
-	  .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
-	  .and. (prop z .lt. @gzmax)) @debugshow end
+          .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
+          .and. (prop z .lt. @gzmax)) show end
    if ?nsel .gt. 0 then
       set tagwtin true
    else
@@ -865,11 +719,11 @@ label check_water_on_grid
       goto no_wat_in
    endif
 
-   define watout sele (segid CWAT .and. .not. .byres. watin) @debugshow end
+   define watout sele (segid CWAT .and. .not. .byres. watin) show end
    
    if ?nsel .gt. 0 then
       set tagwout true
-      delete atom sele (segid CWAT .and. .not. .byres. watin ) @debugshow end
+      delete atom sele (segid CWAT .and. .not. .byres. watin ) show end
       join CWAT renum
    endif
 
@@ -892,14 +746,14 @@ label check_water_on_grid
    define watin sele segid CWAT .and. ((prop x .gt. @gxmin) -
       .and. (prop x .lt. @gxmax) .and. (prop y .gt. @gymin) -
       .and. (prop y .lt. @gymax) .and. (prop z .gt. @gzmin) -
-	  .and. (prop z .lt. @gzmax)) @debugshow end
+          .and. (prop z .lt. @gzmax)) show end
 
    if tagwout .eq. false then
       goto no_wat_out
    endif
 
    if tagwtin .eq. true then
-      delete atom sele .byres. watin @debugshow end
+      delete atom sele .byres. watin show end
       join CWAT renum
    endif   
 
