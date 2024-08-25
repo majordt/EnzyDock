@@ -38,22 +38,6 @@ endif
 !! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... show end sele ... show end
 
 ! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... show end sele ... show end
-move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele atom ligand_@currligand 1  S02 show end -
-                                                            sele atom ligand_@currligand 1  N05 show end
-move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele atom ligand_@currligand 1  N05 show end -
-                                                            sele atom ligand_@currligand 1  C06 show end
-move add mvtp tors weight 1.00 dmax 180.0 label tr4 fewer 0 sele atom ligand_@currligand 1  C06 show end -
-                                                            sele atom ligand_@currligand 1  C07 show end
-move add mvtp tors weight 1.00 dmax 180.0 label tr5 fewer 0 sele atom ligand_@currligand 1  C07 show end -
-                                                            sele atom ligand_@currligand 1  C08 show end
-
-incr ntors by 4
-
-if smartmc .eq. true then
-   move link lab1 tr2 lab2 tr3
-   move link lab1 tr3 lab2 tr4
-   move link lab1 tr4 lab2 tr5
-endif
 
 ! Link moves so they are done together.
 !move link lab1 tr1 lab2 tr2 
