@@ -137,7 +137,7 @@ set numflex1 0
 set mkconfs true
 
 ! MAXCONF - Number of conformations to produce before clustering
-500 ! RS - for short test 10
+set maxconf 500 ! RS - for short test 10
 
 ! VACCLUSTERWIDTH - Between 0.0 and 1.0:
 ! Treshhold for TFD clustering of conformers
