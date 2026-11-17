@@ -50,17 +50,19 @@ MASS  -1  HT         1.00800 H ! TIPS3P WATER HYDROGEN
 MASS  -1  HX         1.00800 H ! hydroxide hydrogen
 MASS  -1  OT        15.99940 O ! TIPS3P WATER OXYGEN
 MASS  -1  OX        15.99940 O ! hydroxide oxygen
+MASS  -1  HPER       1.00800 H ! H of H2O2
+MASS  -1  OPER      15.99900 O ! O of H2O2
 MASS  -1  LIT        6.94100 LI ! Lithium ion
-MASS  -1  SOD       22.98977 NA ! Sodium Ion
+!MASS  -1  SOD       22.98977 NA ! Sodium Ion
 MASS  -1  MG        24.30500 MG ! Magnesium Ion
 MASS  -1  POT       39.09830 K ! Potassium Ion
-MASS  -1  CAL       40.08000 CA ! Calcium Ion
+!MASS  -1  CAL       40.08000 CA ! Calcium Ion
 MASS  -1  RUB       85.46780 RB ! Rubidium Ion
 MASS  -1  CES      132.90545 CS ! Cesium Ion
 MASS  -1  BAR      137.32700 BA ! Barium Ion
 MASS  -1  ZN        65.37000 ZN ! zinc (II) cation
 MASS  -1  CAD      112.41100 CD ! cadmium (II) cation
-MASS  -1  CLA       35.45000 CL ! Chloride Ion
+!MASS  -1  CLA       35.45000 CL ! Chloride Ion
 MASS  -1  CCAT      12.01100 C ! CATION ATOM- added by Shani
 
 default first none last none
@@ -97,6 +99,29 @@ ATOM H1 HX     0.32
 BOND O1 H1
 DONOR H1 O1
 ACCEPTOR O1
+
+RESI H2O2         0.000 ! hydrogen peroxide
+                        ! Orabi and English, JCTC. 2018, 14, 2808-2821
+!
+!   HP2
+!     \
+!      OP2--OP1
+!             \
+!             HP1
+!
+GROUP
+ATOM HP1   HPER   0.41
+ATOM OP1   OPER  -0.41
+ATOM OP2   OPER  -0.41
+ATOM HP2   HPER   0.41
+
+BOND HP1 OP1  OP1 OP2  OP2 HP2
+DONOR HP1 OP1
+DONOR HP2 OP2
+ACCEPTOR OP1
+ACCEPTOR OP2
+IC HP1  OP1  OP2  HP2   0.963  99.92  111.71  99.92  0.963
+PATCH FIRST NONE LAST NONE
 
 ! Ion parameters from Benoit Roux and Coworkers
 ! As of 8/10 new NBFIX terms required
@@ -167,6 +192,8 @@ MASS  -1  HT         1.00800 ! TIPS3P WATER HYDROGEN
 MASS  -1  HX         1.00800 ! hydroxide hydrogen
 MASS  -1  OT        15.99940 ! TIPS3P WATER OXYGEN
 MASS  -1  OX        15.99940 ! hydroxide oxygen
+MASS  -1  HPER       1.00800 ! H of H2O2
+MASS  -1  OPER      15.99900 ! O of H2O2
 MASS  -1  LIT        6.94100 ! Lithium ion
 MASS  -1  SOD       22.98977 ! Sodium Ion
 MASS  -1  MG        24.30500 ! Magnesium Ion
@@ -179,6 +206,7 @@ MASS  -1  ZN        65.37000 ! zinc (II) cation
 MASS  -1  CAD      112.41100 ! cadmium (II) cation
 MASS  -1  CLA       35.45000 ! Chloride Ion
 MASS  -1  CCAT      12.01100 !CATION ATOM- added by Shani
+
 BONDS
 !
 !V(bond) = Kb(b - b0)**2
@@ -191,6 +219,8 @@ BONDS
 HT    HT      0.0       1.5139  ! from TIPS3P geometry (for SHAKE w/PARAM)
 HT    OT    450.0       0.9572  ! from TIPS3P geometry
 OX    HX    545.0       0.9700  ! hydroxide ion
+HPER  OPER  521.0       0.963   ! H2O2
+OPER  OPER  285.5       1.442   ! H2O2
 
 ANGLES
 !
@@ -206,6 +236,7 @@ ANGLES
 !atom types     Ktheta    Theta0   Kub     S0
 !
 HT   OT   HT     55.0      104.52   ! FROM TIPS3P GEOMETRY
+HPER OPER OPER   60.4       99.92   ! H2O2
 
 DIHEDRALS
 !
@@ -217,7 +248,7 @@ DIHEDRALS
 !
 !atom types             Kchi    n   delta
 !
-
+HPER  OPER  OPER  HPER   2.02     2     0.0 ! H2O2
 
 !
 IMPROPER
@@ -244,6 +275,10 @@ OX     0.000000  -0.120000     1.700000 ! ALLOW   POL ION
                 ! JG 8/27/89
 HX     0.000000  -0.046000     0.224500 ! ALLOW PEP POL SUL ARO ALC
                 ! same as TIP3P hydrogen, adm jr., 7/20/89
+
+!for hydrogen peroxide
+HPER     0.0       -0.046     0.2245
+OPER     0.0       -0.20384   1.67423
 
 !ions
 LIT      0.0      -0.00233       1.2975  ! Lithium
@@ -272,8 +307,8 @@ CLA      0.0       -0.150      2.27     ! Chloride
 NBFIX
 !              Emin         Rmin
 !            (kcal/mol)     (A)
-SOD    CLA      -0.083875   3.731 !  From osmotic pressure calibration, J. Phys.Chem.Lett. 1:183-189
-POT    CLA      -0.114236   4.081 !  From osmotic pressure calibration, J. Phys.Chem.Lett. 1:183-189
+!SOD    CLA      -0.083875   3.731 !  From osmotic pressure calibration, J. Phys.Chem.Lett. 1:183-189
+!POT    CLA      -0.114236   4.081 !  From osmotic pressure calibration, J. Phys.Chem.Lett. 1:183-189
 END
 
 ! The following section contains NBFixes for sodium interacting with
@@ -314,6 +349,7 @@ SOD    OC       -0.07502    3.23  ! osmotic P; carboxylate =O
 SOD    OS       -0.07502    3.13  ! POPC optim.; ester =O
 !! NA
 !SOD    ON3      -0.07502    3.16  ! POPC optim.; phosphate =O UNVALIDATED
+LIT    ON3      -0.0167     3.1775 ! Savelyev and MacKerell, JPCB 2015
 !! lipid
 SOD    OCL      -0.07502    3.23  ! osmotic P; carboxylate =O
 SOD    OBL      -0.07502    3.13  ! POPC optim.; ester =O
@@ -326,6 +362,28 @@ SOD    OG2D2    -0.07502    3.23  ! osmotic P; carboxylate =O
 ! OG2D1 in CGenFF shared between esters, amides, aldehydes,...
 !SOD    OG2D1    -0.07502    3.13  ! POPC optim.; ester =O
 SOD    OG2P1    -0.07502    3.16  ! POPC optim.; phosphate =O
+! Chloride
+CLA    LIT      -0.0187     3.6875 ! Savelyev and MacKerell, JPCB 2015
+CLA    SOD      -0.0839     3.7310 ! Savelyev and MacKerell, JPCB 2015
+CLA    POT      -0.1142     4.0810 ! Savelyev and MacKerell, JPCB 2015
+
+!Potassium NBFixes
+!carboxylate O
+POT    OC       -0.1022   3.524   ! PNAS, 111: E5354-E5362 (2014)
+POT    OCL      -0.1022   3.524   ! PNAS, 111: E5354-E5362 (2014)
+POT    OC2D2    -0.1022   3.524   ! PNAS, 111: E5354-E5362 (2014)
+POT    OG2D2    -0.1022   3.524   ! PNAS, 111: E5354-E5362 (2014)
+
+!Calcium NBFixes: 2019-8
+CAL    CLA      -0.134164   3.727 ! from J. Phys. Chem. B 2018, 122, 1484−1494
+CAL    O2L      -0.12       3.256 ! from J. Phys. Chem. B 2018, 122, 1484−1494
+CAL    OC2DP    -0.12       3.256 ! from J. Phys. Chem. B 2018, 122, 1484−1494
+CAL    OG2P1    -0.12       3.256 ! from J. Phys. Chem. B 2018, 122, 1484−1494
+!carboxylate O
+CAL    OCL      -0.12       3.232 ! Rong Shen and Benoit Roux, personal communication
+CAL    OC       -0.12       3.232 ! Nature Structural & Molecular Biology 23: 590 (2016)
+CAL    OC2D2    -0.12       3.232 ! 
+CAL    OG2D2    -0.12       3.232 ! 
 
 END
 BOMLEV @bom @PARA
