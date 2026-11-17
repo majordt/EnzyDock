@@ -1,0 +1,10 @@
+# please check the following samples to make your exclusion csv file.
+# It should be named "exclude_atoms.csv".
+# It should be placed inside stream/consdef/
+#
+# docking ligand > lig_N
+# docking ligand reference > ref_N
+# expected format: (ref_N/lig_N),c1,c3,c4 | N = integer
+#
+# please don't write any comments in the body of the file
+lig_3,c1,c3
