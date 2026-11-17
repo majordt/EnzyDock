@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Create softlinks to allow long file names with CHARMM
 # Copyright © 2022 Dan T. Major
 

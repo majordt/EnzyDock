@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Original version written by DTM 2020
 # Permutations included by RS 03/2021
 # Copyright © 2022 Dan T. Major

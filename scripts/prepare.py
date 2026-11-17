@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # To test as standalone use:
 # ./prepare.py /private/chem/silcsbio.2022.1/cgenff/cgenff
 # 
@@ -22,7 +22,7 @@ class Prep:
         self.local_top = local_top
         self.mol_file = pdb_dir + name + '.mol'
         self.mol2_file = pdb_dir + name + '.mol2'
-        self.str = local_top + name + '.str'
+        self.stream = local_top + name + '.str'
         self.pdb_file = pdb_dir + name + '.pdb'
         input_arg = sys.argv
         self.cgenff = input_arg[1].lower()
@@ -56,13 +56,13 @@ class Prep:
         os.system(self.cgenff + ' ' + self.pdb_dir + self.name + '.mol2 1>' + self.local_top + self.name + '.str 2>>' +self.local_top + self.name +'.log')
 
     def rename_lig(self):
-        with open(self.str , "r") as f:
+        with open(self.stream , "r") as f:
             lines = f.readlines()
             f.close()
         index_line = [j for j in range(len(lines)) if 'RESI' in lines[j]][0]
         new_line = [lines[j].replace(lines[j].split()[1], 'LIG') for j in range(len(lines)) if 'RESI' in lines[j]][0]
         lines[index_line] = new_line
-        f = open(self.str , "w")
+        f = open(self.stream , "w")
         lines = "".join(lines)
         f.write(lines)
         f.close()
@@ -76,7 +76,33 @@ class Prep:
         with open(self.mol2_file, "r") as f:
             lines = f.readlines()
             f.close()
-        new_lines = [lines[j].replace(lines[j].split()[1], lines[j].split()[1] + str(atom_numbering[j-7]),1)  if  (lines[j].split() and len(lines[j].split()) == 9) else lines[j] for j in range(len(lines))]
+        atoms = False
+        new_lines = []
+        j = 1
+        for l in lines:
+            if l.startswith("@<TRIPOS>ATOM"):
+                atoms = True
+            elif atoms:
+                if l.startswith("@<TRIPOS>"):
+                    atoms = False
+                else:
+                    ele = l[8:10]
+                    if not ele[1].isalpha():
+                        ele = l[8:9]
+                    ele0 = f"{ele}{j}"
+                    if len(ele0) == 2:
+                        ele = f"{ele}{j}  "
+                    elif len(ele0) == 3:
+                        ele = f"{ele}{j} "
+                    elif len(ele0) == 4:
+                        ele = f"{ele}{j}"
+                    elif len(ele0) >= 5 or len(ele0) < 2:
+                        print(f"please debug prepare.py there is a problem with atom name {ele}")
+                    l = f"{l[:8]}{ele}{l[12:58]}UNL1{l[62:]}"
+                    j += 1
+            new_lines.append(l)
+        lines = new_lines
+        #new_lines = [lines[j].replace(lines[j].split()[1], lines[j].split()[1] + str(atom_numbering[j-7]),1)  if  (lines[j].split() and len(lines[j].split()) == 9) else lines[j] for j in range(len(lines))]
         f = open(self.mol2_file, "w")
         lines = "".join(new_lines)
         f.write(lines)
@@ -86,8 +112,50 @@ class Prep:
         with open(self.pdb_file, "r") as file:
             filedata = file.read()
         filedata = filedata.replace('UNL', 'LIG')
+        filedata = filedata.replace('UNK', 'LIG')
+        filedata = filedata.replace('HETATM', 'ATOM  ')
         with open(self.pdb_file, "w") as file:
             file.write(filedata)
+    
+
+    def fix_pdb2(self):
+        
+        def compare_floats(a, b, precision=3):
+            return round(a, precision) == round(b, precision)
+        
+        mol2_d = []
+        with open(self.mol2_file) as f:
+            mol2l = f.readlines()
+        atoms = False
+        for i, l in enumerate(mol2l, 1):
+            if l.startswith("@<TRIPOS>ATOM"):
+                atoms = True
+            elif atoms:
+                if l.startswith("@<TRIPOS>"):
+                    atoms = False
+                else:
+                    # atom_id atom_name x y z atom_type [subst_id [subst_name [charge [status_bit]]]]
+                    parts = l.split()
+                    atname = parts[1].strip()
+                    x = float(parts[2].strip())
+                    y = float(parts[3].strip())
+                    z = float(parts[4].strip())
+                    mol2_d.append({"atname":atname, "x":x, "y":y, "z":z})
+        new_pdb_l = ""
+        with open(self.pdb_file, "r") as file:
+            lines = file.readlines()
+        for line in lines:
+            if line.startswith('ATOM'):
+                #atname = line[11:16].strip()
+                x = float(line[30:38].strip())
+                y = float(line[38:46].strip())
+                z = float(line[46:54].strip())
+                for coor in mol2_d:
+                    if compare_floats(coor['x'],x) and compare_floats(coor['y'],y) and compare_floats(coor['z'],z):
+                        line = f"{line[:12]}{coor['atname'][:4]:<4}{line[16:21]}A{line[22:]}"
+            new_pdb_l += line
+        with open(self.pdb_file, "w") as file:
+            file.write(new_pdb_l)
 
     def delete_mol(self):
         os.remove(self.mol2_file)
@@ -149,6 +217,7 @@ def main():
     ligands.apply(lambda x: x.m.run_cgenff(), axis=1)
     ligands.apply(lambda x: x.m.rename_lig(), axis=1)
     ligands.apply(lambda x: x.m.fix_pdb(), axis=1)
+    ligands.apply(lambda x: x.m.fix_pdb2(), axis=1)
     ligands.apply(lambda x: x.m.delete_mol(), axis=1)
     write_footer()
 

@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Initial version taken from CHARMM-GUI tutorial
 # Copyright © 2022 Dan T. Major
 

@@ -9,4 +9,8 @@
 PYTHON4ENZYDOCK=/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 SCRIPT=$1
 shift
-exec "$PYTHON4ENZYDOCK" "$SCRIPT" "$@"
+exec "$PYTHON4ENZYDOCK" "$SCRIPT" "$@" 2>&1
+
+# Option from SB: ignore some error msgs
+# PYTHONWARNINGS="ignore::UserWarning"
+# exec env PYTHONWARNINGS="$PYTHONWARNINGS" "$PYTHON4ENZYDOCK" "$SCRIPT" "$@" 2>&1

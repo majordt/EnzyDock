@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # RS: superpose_cluster_ligands as part of EnzyDock
 # RS: compare to cluster_ligands.py, aviod duplicates of functions. Include symmetry.
 # To test as standalone use:
@@ -8,6 +8,7 @@
 import math
 import sys
 import os
+from collections import Counter
 from read_write_pdb import Atom, PDB
 import subprocess
 from rdkit import Chem
@@ -53,36 +54,56 @@ def read_pdb_files(currligstr, runid, bind, pre, maxconf):
     dirfile_list = []
     pdb_file0 = currligstr + "_" + runid + "_" + bind
     skip = 0
+    smiles = []
     for conf in range(maxconf):
-         # @currligand_@runid_mdmc_min_@conf_0.crd
-         pdb_file = pdb_file0 + "_" + str(conf+1) + "_" + pre + ".pdb"
-         print(pdb_file)
-         #file_list += [ pdb_file ]
-         pdb_file = results_dir + "/" + pdb_file
-         #dirfile_list += [ pdb_file ]
-         subprocess.call(["/bin/rm","-f","temp"])
-         tmpfilename = 'temp'
-         pdb = PDB(pdb_file, tmpfilename)
-         atoms = pdb.get_atoms(to_dict=False)
-         pdb.add_element()
-         pdb.write_pdb(tmpfilename)
-         subprocess.call(["/bin/mv","temp",pdb_file])
-         #mol += [ Chem.MolFromPDBFile(pdb_file) ]
-         mol_tmp = Chem.MolFromPDBFile(pdb_file)
-         if mol_tmp != None:
-            mol += [ mol_tmp ]
-            # @currligand_@runid_mdmc_min_@conf_0.crd
-            pdb_file = pdb_file0 + "_" + str(conf+1) + "_" + pre + ".pdb"
-            file_list += [ pdb_file ]
-            pdb_file = results_dir + "/" + pdb_file
-            dirfile_list += [ pdb_file ]
-         else:
-            print("Problems with molecule %s ... skipping to next" % pdb_file)
-            skip += 1
+        # @currligand_@runid_mdmc_min_@conf_0.crd
+        pdb_file = pdb_file0 + "_" + str(conf+1) + "_" + pre + ".pdb"
+        print(pdb_file)
+        #file_list += [ pdb_file ]
+        pdb_file = results_dir + "/" + pdb_file
+        #dirfile_list += [ pdb_file ]
+        subprocess.call(["/bin/rm","-f","temp"])
+        tmpfilename = 'temp'
+        pdb = PDB(pdb_file, tmpfilename)
+        atoms = pdb.get_atoms(to_dict=False)
+        pdb.add_element()
+        pdb.write_pdb(tmpfilename)
+        subprocess.call(["/bin/mv","temp",pdb_file])
+        #mol += [ Chem.MolFromPDBFile(pdb_file) ]
+        mol_tmp = Chem.MolFromPDBFile(pdb_file)
+        if mol_tmp != None:
+           smiles.append(Chem.MolToSmiles(mol_tmp))
+           mol += [ mol_tmp ]
+           # @currligand_@runid_mdmc_min_@conf_0.crd
+           pdb_file = pdb_file0 + "_" + str(conf+1) + "_" + pre + ".pdb"
+           file_list += [ pdb_file ]
+           pdb_file = results_dir + "/" + pdb_file
+           dirfile_list += [ pdb_file ]
+        else:
+           print("Problems with molecule %s ... skipping to next" % pdb_file)
+           skip += 1
+    # revise list of smiles to filter only common smiles
+    if len(set(smiles)) > 1: # more than 1 type
+        c = Counter(smiles)
+        freq_smi = c.most_common(1)[0][0]
+        new_mol = []
+        new_file_list = []
+        new_dirfile_list = []
+        for smi, mol_tmp, file, dirfile in zip(smiles, mol, file_list, dirfile_list):
+            if smi == freq_smi:
+                new_mol += [ mol_tmp ]
+                new_file_list += [ file ]
+                new_dirfile_list += [ dirfile ]
+            else:
+                print("Problems with molecule %s (different smiles)... skipping to next" % file)
+                skip += 1
+        mol = new_mol
+        file_list = new_file_list
+        dirfile_list = new_dirfile_list
     if skip > 0:
-       print("Skipped %d out of %d structures" % (skip, maxconf))
-       if skip == maxconf:
-          raise_nofile_err(currligstr)
+        print("Skipped %d out of %d structures" % (skip, maxconf))
+        if skip == maxconf:
+            raise_nofile_err(currligstr)
     print("\n")
     return mol, results_dir, file_list, dirfile_list
 
@@ -161,7 +182,7 @@ def file_handle(cs, results_dir, file_list, dirfile_list, currligstr, runid, bin
         # copy + rename minimum energy structure to match dock_ligand.inp expectations
         # pdb file:
         # @resDIR/@currligand_@runid_@iter_0.pdb
-        targetn = currligstr + "_" + runid + "_" + str(i+1) + "_" + pre + ".crd"
+        targetn = currligstr + "_" + runid + "_" + str(i+1) + "_" + pre + ".pdb"
         targetdir = "../results"
         command = "cp -f " + results_dir + "/" + min_file + " " + targetdir + "/" + targetn
         try:

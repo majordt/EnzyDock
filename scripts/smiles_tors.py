@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # Copyright © 2022 Dan T. Major
 
 import sys
@@ -8,7 +8,7 @@ from rdkit.Chem.Lipinski import RotatableBondSmarts
 from rdkit.Chem import rdqueries
 from rdkit.Chem import rdMolTransforms
 
-def print_part1(file):
+def print_part1(file, basin_hopping):
     file.write(
 '''* Monte Carlo add moves
 * Moves added must match the ones deleted in mc_delete.str
@@ -31,24 +31,33 @@ def print_part1(file):
 ! the second atom in the definition. The MC module doesn't care about which atoms are fixed.
 ! So, if we have a covalently docked ligand via a Cys-S-C-…-X-Y-Z-W-… link, all MC moves MUST be defined 
 ! "outwards" and "away" from the Cys residue. Otherwise, the MC module will move the Cys residue itself!!!
-! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y  show end -
-!                                                              sele atom ligand_@currligand 1 Z  show end
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2  fewer 0 sele atom ligand_@currligand 1 Y  @debugshow end -
+!                                                              sele atom ligand_@currligand 1 Z  @debugshow end
 set ntors 0
 
 if covalent .eq. true then
-! move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink0 show end -
-!                                                              sele atom FLX@{covseg} 1 @protlink1 show end
-! move add mvtp tors weight 2.00 dmax 180.0 label tr2  fewer 0 sele atom FLX@{covseg} 1 @protlink1 show end -
-
- move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink1 show end -
-                                                              sele atom ligand_@currligand 1 @liglink1 show end
-! incr ntors by 2
- incr ntors by 1
+! move add mvtp tors weight 2.00 dmax 180.0 label tr1  fewer 0 sele atom FLX@{covseg} 1 @protlink0 @debugshow end -
+!                                                              sele atom FLX@{covseg} 1 @protlink1 @debugshow end
+! move add mvtp tors weight 2.00 dmax 180.0 label tr2  fewer 0 sele atom FLX@{covseg} 1 @protlink1 @debugshow end -
+ 
+   move add mvtp tors weight 2.00 dmax @tordmax label tr1 fewer 0 -
+            sele atom FLX@{covseg} @covflexresi @protlink1 @debugshow end -\n''')
+    if (not basin_hopping):
+        line = "            sele atom ligand_@currligand 1 @liglink1 @debugshow end\n"
+        file.write(line)
+    else:
+        line = "            sele atom ligand_@currligand 1 @liglink1 @debugshow end -\n"
+        file.write(line)
+        line = "        mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0\n"
+        file.write(line)
+    file.write(
+'''! incr ntors by 2
+   incr ntors by 1
 endif
 
 ! Additional torsional definitions below
-!! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... show end sele ... show end\n
-! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... show end sele ... show end\n''')
+!! move add mvtp tors weight 1.00 dmax 180.0 label tr3 fewer 0 sele ... @debugshow end sele ... @debugshow end\n
+! move add mvtp tors weight 1.00 dmax 180.0 label tr2 fewer 0 sele ... @debugshow end sele ... @debugshow end\n''')
 
 def print_part2(file):
     file.write(
@@ -96,12 +105,14 @@ def smiles_tors():
     pdb_file = sys.argv[1]
     pdb_file = pdb_file.lower()   # CHARMM sends in upper case parameters, change to lower
     print("Parsing ligand file: ",pdb_file)
+    basin_hopping = sys.argv[2]   # If using Basin Hopping algorithm
+    basin_hopping = eval(basin_hopping.title()) # CHARMM sends in upper case parameters, change to sentence
 
     mcfile1 = "../stream/mc/mc_add.str"
     mcfile2 = "../stream/mc/mc_delete.str"
     # Write the mc_add.str file for EnzyDock
     file = open(mcfile1,"w")
-    print_part1(file)
+    print_part1(file, basin_hopping)
     print("Writing file: ", mcfile1)
 
     #try:
@@ -128,11 +139,11 @@ def smiles_tors():
     idx = -1
     ncov = 1   # Number of covalent torsions (Check with RS)
     # Find atom that serves as seed (covalently bonded)
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 3:
         for i in range(num_atoms):
             atom = mol_pdb.GetAtomWithIdx(i)
 #        print(atom.GetPDBResidueInfo().GetName().strip())
-            if (atom.GetPDBResidueInfo().GetName().strip() == sys.argv[2]):
+            if (atom.GetPDBResidueInfo().GetName().strip() == sys.argv[3]):
                 idx = atom.GetIdx()
 
     smiles = Chem.MolToSmiles(mol_pdb,True,False,idx)
@@ -179,12 +190,19 @@ def smiles_tors():
         if (tors_flag):
 #           j = k + 3
            j = k + ncov + 1 #RS
-           line = "move add mvtp tors weight 1.00 dmax 180.0 label tr" + str(j) + " fewer 0 sele atom ligand_@currligand 1 " \
-                   + str(atom1) + " show end -\n"
+           line = "move add mvtp tors weight 1.00 dmax @tordmax label tr" + str(j) + " fewer 0 sele atom ligand_@currligand 1 " \
+                   + str(atom1) + " @debugshow end -\n"
            file.write(line)
-           line = "                                                            sele atom ligand_@currligand 1 " \
-                  + str(atom2) + " show end\n"
-           file.write(line)
+           if (not basin_hopping):
+              line = "                                                            sele atom ligand_@currligand 1 " \
+                     + str(atom2) + " @debugshow end\n"
+              file.write(line)
+           else:
+              line = "                                                            sele atom ligand_@currligand 1 " \
+                     + str(atom2) + " @debugshow end -\n"
+              file.write(line)
+              line = "     mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0\n"
+              file.write(line)
            k += 1
         else:
            ntors -= 1
@@ -192,14 +210,14 @@ def smiles_tors():
     file.write(line)
 #    print_part2(file)
     # Link all torsional moves (if smartmc is set by user)
-# Remove for CHARMM-GUI until all MC bugs cleared
-#    line = "if smartmc .eq. true then\n"
-#    for i in range(ncov+1, ntors+1):
-#       tr1 = "tr" + str(i)
-#       tr2 = "tr" + str(i+1)
-#       line += "   move link lab1 " + tr1 +  " lab2 " + tr2 + "\n"
-#    line += "endif\n\n"
-#    file.write(line)
+    # Remove for CHARMM-GUI until all MC bugs cleared
+    line = "if smartmc .eq. true then\n"
+    for i in range(ncov+1, ntors+1):
+       tr1 = "tr" + str(i)
+       tr2 = "tr" + str(i+1)
+       line += "   move link lab1 " + tr1 +  " lab2 " + tr2 + "\n"
+    line += "endif\n\n"
+    file.write(line)
 
     print_part2(file)
     file.close()
@@ -211,13 +229,13 @@ def smiles_tors():
 
     print_part3(file)
     # Unlink torsional moves (in reverse order)
-# Remove for CHARMM-GUI until all MC bugs cleared
-#    line = "if smartmc .eq. true then\n"
-#    for i in range(ntors, ncov, -1):
-#       tr1 = "tr" + str(i)
-#       line += "   move link lab1 " + tr1 + "\n"
-#    line += "endif\n\n"
-#    file.write(line)
+    # Remove for CHARMM-GUI until all MC bugs cleared
+    line = "if smartmc .eq. true then\n"
+    for i in range(ntors, ncov, -1):
+       tr1 = "tr" + str(i)
+       line += "   move link lab1 " + tr1 + "\n"
+    line += "endif\n\n"
+    file.write(line)
 
     print_part4(file)
 

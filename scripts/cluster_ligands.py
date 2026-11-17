@@ -1,4 +1,4 @@
-#!/home/charmm-gui/local/miniconda3/bin/python
+#!/home/qnt/majort/anaconda3/envs/my-rdkit-env/bin/python3.9
 # To test as standalone use:
 # cluster_ligands.py 1 cotb2_wt 5 5 1.0 1
 # RS: add align option to get_rmsd() function, for vacuum conformers
@@ -85,12 +85,13 @@ def read_pdb_files(arg0, arg1, arg2, maxit, maxrot):
 
     # read in first structure to get number of atoms
     pdb_file = f"../pdb/ligand_{arg1}.pdb"
-    subprocess.call(["/bin/rm","-f",tmpfilename])
-    pdb = PDB(pdb_file, tmpfilename)
-    atoms = pdb.get_atoms(to_dict=False)
-    pdb.add_element()
-    pdb.write_pdb(tmpfilename)
-    subprocess.call(["/bin/mv",tmpfilename,pdb_file])
+    # WARNING: These lines makes CONECT section to disappear!!!
+    #subprocess.call(["/bin/rm","-f",tmpfilename])
+    #pdb = PDB(pdb_file, tmpfilename)
+    #atoms = pdb.get_atoms(to_dict=False)
+    #pdb.add_element()
+    #pdb.write_pdb(tmpfilename)
+    #subprocess.call(["/bin/mv",tmpfilename,pdb_file])
     mol_tmp = Chem.MolFromPDBFile(pdb_file)
     refNatoms = mol_tmp.GetNumAtoms()
 
@@ -228,7 +229,9 @@ def file_handle(cs, results_dir, file_list, dirfile_list, arg0, arg1, arg2, nums
             print(error, file = errfile)
         # Second cp copies minimum ligand pose of cluster including flexible residues
         if arg0 in command:
-            command = command.replace(arg0,"")
+            #command = command.replace(arg0,"") # causes problems if "lig" in runid
+            min_file2 = min_file[4:] # omit "lig_" at the beginning of the file name
+            command = "cp -f " + results_dir + min_file2 + " " + cluster_dir + "min_clust" + str(i+1) + "_" + min_file2
         try:
             os.system(command)
         except OSError as error:
@@ -245,8 +248,9 @@ def file_handle(cs, results_dir, file_list, dirfile_list, arg0, arg1, arg2, nums
             print(error, file = errfile)
         # Copy flexible residues files, must be done per segment
         for k in range(numseg):
-            in_flex_file = "flex" + str(k+1) + "_" + min_file
-            in_flex_file = in_flex_file.replace(arg0,"")
+            min_file2 = min_file[4:]
+            in_flex_file = "flex" + str(k+1) + "_" + min_file2
+            # in_flex_file = in_flex_file.replace(arg0,"") # causes problems if "lig" in runid
             out_flex_file = "flex" + str(k+1) + "_min_clust" + str(i+1) + "_" + arg1 + "_" + arg2 + ".pdb"
             in_flex_file = results_dir + in_flex_file
             out_flex_file = cluster_dir + out_flex_file
@@ -256,8 +260,9 @@ def file_handle(cs, results_dir, file_list, dirfile_list, arg0, arg1, arg2, nums
             else:
                 if (debug): print("File %s doesn't exist" % in_flex_file)
         # Copy waters added by user (e.g., crystal waters)
-        in_flex_file = "waterin_" + min_file
-        in_flex_file = in_flex_file.replace(arg0,"")
+        min_file2 = min_file[4:]
+        in_flex_file = "waterin_" + min_file2
+        #in_flex_file = in_flex_file.replace(arg0,"") # causes problems if "lig" in runid
         out_flex_file = "waterin_min_clust" + str(i+1) + "_" + arg1 + "_" + arg2 + ".pdb"
         in_flex_file = results_dir + in_flex_file
         out_flex_file = cluster_dir + out_flex_file
@@ -267,8 +272,9 @@ def file_handle(cs, results_dir, file_list, dirfile_list, arg0, arg1, arg2, nums
         else:
             if (debug): print("File %s doesn't exist" % in_flex_file)
         # Copy explicit waters added during docking
-        in_flex_file = "waterexpl_" + min_file
-        in_flex_file = in_flex_file.replace(arg0,"")
+        min_file2 = min_file[4:]
+        in_flex_file = "waterexpl_" + min_file2
+        #in_flex_file = in_flex_file.replace(arg0,"") # causes problems if "lig" in runid
         out_flex_file = "waterexpl_min_clust" + str(i+1) + "_" + arg1 + "_" + arg2 + ".pdb"
         in_flex_file = results_dir + in_flex_file
         out_flex_file = cluster_dir + out_flex_file
