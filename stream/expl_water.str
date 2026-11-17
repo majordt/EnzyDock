@@ -202,7 +202,9 @@ move add mvtp rtrn byresidue weight 1.00 dmax 0.10 label wtrn sele segid EWAT en
 move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele segid EWAT end
 ! Link moves so they are done together.
 ! Remove for CHARMM-GUI until all MC bugs cleared
-!move link lab1 wtrn lab2 wrot
+if smartmc then
+   move link lab1 wtrn lab2 wrot
+endif
 
 ! Do standard single temperature MC simulation
 mc temperature @temp nsteps @watmcsteps -
@@ -211,7 +213,9 @@ mc temperature @temp nsteps @watmcsteps -
    iuncrd @iuncrd nsavc @nsavc
 
 ! Remove for CHARMM-GUI until all MC bugs cleared
-!move link lab1 wtrn
+if smartmc then
+   move link lab1 wtrn
+endif
 move dele label wtrn
 move dele label wrot
 

@@ -8,6 +8,9 @@
 ! BOMBLEVEL - The bomlev for the current run of the program
 set bomblevel 0
 set silent true ! false
+set charmmgui false ! if true, reads psf-crd
+! Set fulltoppar true if non regular amino-acids / components
+set fulltoppar false
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Enzyme details
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -129,8 +132,8 @@ set numflex1 0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! The following options relate to ligand MD-SA/MC-SA before docking
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! MKCONFS - If true, perform MD-SA and MC SA to produce multilpe 
-! conformations. Then cluster them by tosionals.
+! MKCONFS - If true, perform MD-SA and MC-SA to produce multiple 
+! conformations. Then cluster them by torsions.
 set mkconfs false
 
 ! MAXCONF - Number of conformations to produce before clustering
@@ -151,7 +154,7 @@ set minligmdtemp 300.0
 set ligmdsteps 1000 ! RS - for short test ! 10000
 
 ! LIGMDYCLES - Number of annealing heating and cooling steps
-set ligmdycles 5
+set ligmdcycles 5
 
 ! LIGTIMESTEP - The time step used in SAMD
 set ligtimestep 0.001
@@ -171,7 +174,12 @@ set minligmctemp 300.0 !100.0 !300.0
 set ligmcsteps 1000 ! RS - for short test ! 10000 !1000
 
 ! LIGMCYCLES - Number of annealing heating and cooling steps
-set ligmcycles 5
+set ligmccycles 5
+
+! MC Basin Hopping option
+! Number of MC steps is ligmcsteps
+set ligmctemp   300.0  ! For all MC docking
+set lig_bh_nsteps 10
 
 ! The below are used for energy, minimization, and nbond statements
 set ligctnb  999.0
@@ -196,7 +204,7 @@ set numheatsteps 5000
 
 ! HEATTEMP - The heating temperature of the samd
 ! dynamics 
-set heattemp 600.0
+set maxmdtemp 600.0
 
 ! NUMCOOLSTEPS - The number of cooling steps that samd 
 ! dynamics should take 
@@ -204,7 +212,7 @@ set numcoolsteps 10000
 
 ! COOLTEMP - The cooling temperature of the samd 
 ! dynamics
-set cooltemp 100.0
+set minmdtemp 100.0
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! End MD options
@@ -217,15 +225,20 @@ set cooltemp 100.0
 ! MC is always used for covalent docking. 
 ! MC is used for standard docking if requested. 
 ! to all docking.
-set mcflag    true  ! For standard docking
-set mcsteps  100000  ! RS - for short test !100000  ! For all MC docking
+set mcflag   true   ! For standard docking
+set mcsteps  1000   ! RS - for short test !100000  ! For all MC docking
 set mctemp   300.0  ! For all MC docking
 set mcmin    false  ! Use lowest energy, instead of final MC structure (not in annealing)
 ! If MC annealing (not compatible with mcmin)
 set mcsa true
-set mchtemp  600.0  ! High MC docking (in annealing)
-set mcltemp  100.0  ! Low MC temperature (in annealing)
-set mcycles      5  ! Number of annealing heating and cooling steps
+set maxmctemp  600.0  ! High MC docking (in annealing)
+set minmctemp  100.0  ! Low MC temperature (in annealing)
+set mccycles      5  ! Number of annealing heating and cooling steps
+! If MC Basin Hopping (not compatible with  MC annealing)
+! The number of MC steps are 'mcsteps', temperature is 'mctemp'
+set basin_hopping true
+set bh_nsteps 20     ! Number of minimization steps after each MC step (prior to Metropolis)
+! Relevant for all MC
 set smartmc   true  ! Allows concerted dihedral MC moves
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -277,6 +290,26 @@ set maxrotangle 360
 ! multiplied by atomic mass of relevant atom. For carbon: 12.011
 calc harmforce = 0.00 / 12.011 ! for actual force of 0.00
 
+! Consensus Docking Options (User definse matcing atom names)
+set cons_docking false !true
+
+! Fingerprint Docking Options
+set fp_docking true ! default: false
+! fpknownorder - if false: reorder ligands to maximize number of common atoms
+set fpknownorder true ! false
+! fpmode:
+!    seed: compare all to the first ligand
+!    seq: compare each ligand to the previous ligand
+set fpmode seq ! seed
+! fromexp - if true align liands to ligand_0 that is not redocked
+! (should be the crystal structure position)
+set fromexp true ! false
+! fpseed when reorder ligands the user can select the first ligand
+set fpseed 0 ! 0 for auto-detection if fromexp==False
+! anyele - if False, check elements when comparing
+!          if True, match any heavy atom with each other
+set anyele False ! True to match any heavy atom with each other.
+! End of Fingerprint Docking Options
 
 ! USEQMMM - Whether or not the current computation should use 
 ! QM/MM for the ligand or not 

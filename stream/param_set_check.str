@@ -16,10 +16,14 @@ if proteinunit .lt. 1 stop
 
 ! Additional variables
 if @?silent             .eq. 0 set silent true
+if @?debug              .eq. 0 set debug false
+if @?renew              .eq. 0 set renew false
 if @?bomblevel          .eq. 0 set bomblevel 0
 if @?charmmgui          .eq. 0 set charmmgui false
+if @?fulltoppar         .eq. 0 set fulltoppar false
 if @?{prepare_ligands}  .eq. 0 set prepare_ligands false 
 if @?numcofactor        .eq. 0 set numcofactor 0
+if @?nowatlig           .eq. 0 set nowatlig 0
 if @?{patch_cofact}     .eq. 0 set patch_cofact false
 if @?{patch_lig_cofact} .eq. 0 set patch_lig_cofact false
 if @?flexibledocking    .eq. 0 set flexibledocking false
@@ -30,27 +34,80 @@ if @?{fp_docking}       .eq. 0 set fp_docking false
 if @?{cons_docking}     .eq. 0 set cons_docking false
 if @?maxligmctemp       .eq. 0 set maxligmctemp 800.0
 if @?minligmctemp       .eq. 0 set minligmctemp 300.0
+if @?ligmctemp          .eq. 0 set ligmctemp 300.0
 if @?ligmcsteps         .eq. 0 set ligmcsteps 1000
 if @?ligmcflag          .eq. 0 set ligmcflag true
 if @?mcflag             .eq. 0 set mcflag true
+if @?tordmax            .eq. 0 set tordmax 180.0
+if @?ligtordmax         .eq. 0 set ligtordmax 90.0
 if @?samd               .eq. 0 set samd true
 if @?smartmc            .eq. 0 set smartmc false
 if @?timestep           .eq. 0 set timestep 0.001
 if @?numheatsteps       .eq. 0 set numheatsteps 5000
-if @?heattemp           .eq. 0 set heattemp 800.0
+!if @?heattemp           .eq. 0 set heattemp 800.0
+! backward compatibility
+! heattemp -> maxmdtemp
+if @?maxmdtemp          .eq. 0 then
+    if @?heattemp       .ne. 0 then
+        set maxmdtemp @heattemp
+    else
+        set maxmdtemp 800.0
+    endif
+endif
 if @?numcoolsteps       .eq. 0 set numcoolsteps 10000
-if @?cooltemp           .eq. 0 set cooltemp 100.0
+!if @?cooltemp           .eq. 0 set cooltemp 100.0
+! backward compatibility
+! cooltemp -> minmdtemp
+if @?minmdtemp          .eq. 0 then
+    if @?cooltemp       .ne. 0 then
+        set minmdtemp @cooltemp
+    else
+        set minmdtemp 100.0
+    endif
+endif
 if @?mcsteps            .eq. 0 set mcsteps 10000
+if @?trotmcsteps        .eq. 0 set trotmcsteps 3000
 if @?mcsa               .eq. 0 set mcsa false
 if @?mctemp             .eq. 0 set mctemp 300.0
-if @?mchtemp            .eq. 0 set mchtemp @mctemp
-if @?mcltemp            .eq. 0 set mcltemp @mctemp
-if @?mcycles            .eq. 0 set mcycles 2
+!if @?maxmctemp            .eq. 0 set maxmctemp @mctemp
+! backward compatibility
+! mchtemp -> maxmctemp
+if @?maxmctemp          .eq. 0 then
+    if @?mchtemp        .ne. 0 then
+        set maxmctemp @mchtemp
+    else
+        set maxmctemp @mctemp
+    endif
+endif
+!if @?minmctemp            .eq. 0 set minmctemp @mctemp
+! backward compatibility
+! mcltemp -> minmctemp
+if @?minmctemp          .eq. 0 then
+    if @?mcltemp        .ne. 0 then
+        set minmctemp @mcltemp
+    else
+        set minmctemp @mctemp
+    endif
+endif
+!if @?mccycles            .eq. 0 set mccycles 2
+! backward compatibility
+! mcycles -> mccycles
+if @?mccycles           .eq. 0 then
+    if @?mcycles        .ne. 0 then
+        set mccycles @mcycles
+    else
+        set mccycles 2
+    endif
+endif
+if @?mdcycles           .eq. 0 set mdcycles 5
 if @?mctorsgen          .eq. 0 set mctorsgen true
 if @?mcmin              .eq. 0 set mcmin false
+if @?{basin_hopping}    .eq. 0 set basin_hopping false
 if @?mstep              .eq. 0 set mstep 500
 if @?mmstep             .eq. 0 set mmstep 500
 if @?qmstep             .eq. 0 set qmstep 50
+if @?{lig_bh_print}     .eq. 0 set lig_bh_print 1
+if @?{bh_print}         .eq. 0 set bh_print 1
 if @?mprint             .eq. 0 calc mprint @mstep/10
 if @?mmprint            .eq. 0 calc mmprint @mmstep/10
 if @?qmprint            .eq. 0 calc qmprint @qmstep/10
@@ -66,14 +123,33 @@ if @?deflink            .eq. 0 set deflink false
 
 if @?mkconfs            .eq. 0 set mkconfs false
 if @?maxconf            .eq. 0 set maxconf 100
+if @?etkdg              .eq. 0 set etkdg false
 if @?vacclusterwidth    .eq. 0 set vacclusterwidth 0.2
 if @?ligctnb            .eq. 0 set ligctnb 999.0
 if @?ligctfnb           .eq. 0 set ligctfnb 998.0
 if @?ligctonb           .eq. 0 set ligctonb 996.0
 if @?ligdielec          .eq. 0 set ligdielec cdie
 if @?ligeps             .eq. 0 set ligeps 1.0
-if @?ligmcycles         .eq. 0 set ligmcycles 5
-if @?ligmdycles         .eq. 0 set ligmdycles 5
+!if @?ligmccycles         .eq. 0 set ligmccycles 5
+! backward compatibility
+! ligmcycles -> ligmccycles
+if @?ligmccycles        .eq. 0 then
+    if @?ligmcycles     .ne. 0 then
+        set ligmccycles @ligmcycles
+    else
+        set ligmccycles 5
+    endif
+endif
+!if @?ligmdcycles         .eq. 0 set ligmdcycles 5
+! backward compatibility
+! ligmdycles -> ligmdcycles
+if @?ligmdcycles        .eq. 0 then
+    if @?ligmdycles     .ne. 0 then
+        set ligmdcycles @ligmdycles
+    else
+        set ligmdcycles 5
+    endif
+endif
 if @?maxligmdtemp       .eq. 0 set maxligmdtemp 800.0
 if @?minligmdtemp       .eq. 0 set minligmdtemp 300.0
 if @?ligmdsteps         .eq. 0 set ligmdsteps 10000
@@ -295,10 +371,18 @@ if flexibledocking .eq. true then
             if @?{flex@@i@@j} .eq. 0 goto flex_error
             ! Check that flexible residues are defined in increasing order
             if j .gt. 1 then
-             calc l @j - 1
-             if flex@@i@@j .le. @{flex@@i@@l} then
-                goto flex_error
-             endif
+               calc ll @j - 1
+               if flex@@i@@j .le. @{flex@@i@@ll} then
+                  goto flex_error
+               endif
+            endif
+            ! define covelent residue flex idx
+            if covalent .eq. true then
+               if @covseg .eq. @i then
+                  if @covresi .eq. @flex@@i@@j then
+                     set covflexresi @j
+                  endif
+               endif
             endif
             incr j
          if j .le. @numflex@@i goto check_flex2
@@ -306,6 +390,9 @@ if flexibledocking .eq. true then
       endif
       incr i
    if i .le. @proteinunit goto check_flex1
+   if covalent .eq. true then
+      if @?covflexresi .eq. 0 goto cov_error
+   endif
    if @?kbf .eq. 0 set kbf 25.0
    if k .eq. 0 goto flex_error
    goto no_flex_error
@@ -370,6 +457,47 @@ else
       stop
    endif
 endif
+if @{fp_docking} .eq. true then
+   ! check if user supplied csv file with matching atoms:
+   bomlev -1
+   open unit 101 read form name @stdDIR/user_consensus.csv
+   bomlev @bomblevel
+   if ?iostat .ne. -1 then
+     close unit 101
+     ! csv file exsits; reordering is not possible,
+     ! anyele, fpseed are meaningless
+     set fpknownorder true
+     set anyele true
+     set fpseed 0
+   endif
+
+   !RS: add some checkes for sensible definitions
+   !set fpmax 0.5 ! If greater than 0.5 A, apply force
+   if @?fpmax              .eq. 0 set fpmax 0.5
+   if @?fpknownorder       .eq. 0 set fpknownorder true
+   if @?fpmode             .eq. 0 set fpmode seed ! can be seq
+   if @?fromexp            .eq. 0 set fromexp false
+   if @?anyele             .eq. 0 set anyele false
+   if @?fpseed             .eq. 0 then
+      set fpseed 0 ! 0 for auto-detection only of fromexp==False
+   else
+      if @fpseed .gt. @numligands then
+         echo EnzyDock WARNING: fpseed is greater than the number of ligands
+         ! Update readable log file
+!        open append unit 33 form name enzydock.log
+         write title unit 33
+* EnzyDock WARNING: fpseed is greater than the number of ligands
+* Terminating EnzyDock run...
+*
+      close unit 33
+      stop
+      endif
+   endif
+   if @?multseed        .eq. 0 set multseed true
+endif
+if @?minmaxrotangle     .eq. 0 set minmaxrotangle 15
+if @?minmaxtrans        .eq. 0 set minmaxtrans 0.2
+if @?multseed           .eq. 0 set multseed false
 
 ! Implicit/explicit solvation tests (must choose either GBSW or PBEQ or explicit)
 if isolv .eq. true then
@@ -418,13 +546,27 @@ else
    set expl false
 endif
 
+! MC / BH test
+if @tordmax .gt. 360 then
+    set tordmax 360
+endif
+if @ligtordmax .gt. 360 then
+    set ligtordmax 360
+endif
+! MCSA and BH tests
+if @mcsa .eq. true then
+   if @{basin_hopping} .eq. true then
+      set mcsa false   ! BH overrides MCSA
+   endif
+endif
 ! MCSA tests
 if @mcsa .eq. true then
    set mcmin false
-   if @mcycles .lt. 2 then
-      set mcycles 2
+   !set basin_hopping false
+   if @mccycles .lt. 2 then
+      set mccycles 2
    endif
-   if @mchtemp .lt. @mcltemp then
+   if @maxmctemp .lt. @minmctemp then
       echo EnzyDock WARNING: Protein-ligand MC Annealing temperatures illogical
       ! Update readable log file
 !      open append unit 33 form name enzydock.log
@@ -437,9 +579,28 @@ if @mcsa .eq. true then
    endif
 endif
 
+! Basin Hopping tests
+if @{basin_hopping} .eq. true then
+   !set mcsa false 
+   if @?{bh_nsteps} .eq. 0 then
+      set bh_nsteps 20
+   endif
+   if @?{lig_bh_nsteps} .eq. 0 then
+      set lig_bh_nsteps 10
+   endif
+   ! BH should take lowest E structure
+   set mcmin true
+endif
+
 ! Various tests
+! silence definition
+if @silent .eq. true then
+  set sillev 1
+else
+  set sillev 5 ! regular prnlev
+endif
 if @gridon .eq. true grid off
-if @heattemp .lt. @cooltemp then
+if @maxmdtemp .lt. @minmdtemp then
    echo EnzyDock WARNING: Ligand MC annealing temperatures illogical
    ! Update readable log file
 !   open append unit 33 form name enzydock.log
@@ -472,17 +633,107 @@ if @maxligmdtemp .lt. @minligmdtemp then
    close unit 33
    stop
 endif
-if @ligmcycles .lt. 2 then
-   set ligmcycles 2
+if @ligmccycles .lt. 2 then
+   set ligmccycles 2
 endif
-if @ligmdycles .lt. 2 then
-   set ligmdycles 2
+if @ligmdcycles .lt. 2 then
+   set ligmdcycles 2
 endif
 
+! qmengine check
+! some charmm versions have multiple engines
+if @?qmengine .ne. 0 then
+   if @qmengine .eq. mndo97 then
+      if ?mndo97 .ne. 1 then
+         goto qmengineerr1
+      endif
+   else
+      if @qmengine .eq. squantm then
+         if ?squantm .ne. 1 then
+            goto qmengineerr1
+         endif
+      else
+         if @qmengine .eq. qchem then
+            if ?qchem .ne. 1 then
+               goto qmengineerr1
+            endif
+         else
+            if @qmengine .eq. quantum then
+               if ?quantum .ne. 1 then
+                  goto qmengineerr1
+               endif
+            else
+            ! qmengine has invalid value
+               goto qmengineerr2
+            endif
+         endif
+      endif
+   endif
+else
+   ! define qmengine according to first available engine
+   if ?mndo97 .eq. 1 then
+      set qmengine mndo97
+   else
+      if ?squantm .eq. 1 then
+         set qmengine squantm
+      else
+         if ?qchem .eq. 1 then
+            set qmengine qchem
+         else
+            if ?quantum .eq. 1 then
+               set qmengine quantum
+            else
+               echo EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+               ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+*
+!   close unit 33
+            endif
+         endif
+      endif
+   endif
+endif
+
+goto no_qmengineerr
+label qmengineerr1
+   echo EnzyDock WARNING: qmengine defined to @qmengine is not available
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: qmengine defined to @qmengine is not available.
+* Terminating EnzyDock run...
+*
+   close unit 33
+   stop
+label qmengineerr2
+   echo EnzyDock WARNING: qmengine defined to @qmengine is not an allowed option
+   ! Update readable log file
+!   open append unit 33 form name enzydock.log
+   write title unit 33
+* EnzyDock WARNING: qmengine defined to @qmengine is not an allowed option:
+* select mndo97 or squantm or qchem or quantum .
+* Terminating EnzyDock run...
+*
+   close unit 33
+   stop
+label no_qmengineerr
+
 if @silent .eq. true then
+  if @{basin_hopping} .eq. true then
+    set lig_bh_print @{lig_bh_nsteps}
+    set bh_print @{bh_nsteps}
+  endif
   set mprint @mstep
   set mmprint @mmstep
   set qmprint @qmstep
+endif
+
+if @debug .eq. true then
+  set debugshow show
+else
+  set debugshow   ! empty string
 endif
 
 stream @strDIR/mk_userrestraints.str

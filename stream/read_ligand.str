@@ -1,5 +1,5 @@
 ************************************************************
-*                      Start read_ligand.str               *
+*                 Start read_ligand.str                    *
 ************************************************************
 * Read ligand pdb
 * 
@@ -18,8 +18,9 @@ hbuild sele type H* .and. segi ligand_@currligand end
 ! If using MC run automatic torsional Python generator code
 ! Only enter this section if called from ligand_simulate.inp 
 set 0 ../pdb/ligand_@currligand.pdb
+set 1 @{basin_hopping}
 if @covalent .eq. true then
-   set 1 @liglink1
+   set 2 @liglink1
 endif
 if @in1 .eq. true then
    if @mcflag .eq. true then
@@ -29,12 +30,12 @@ if @in1 .eq. true then
          if @covalent .eq. true then
              !system "../scripts/smiles_tors.py @0 @1"
              close unit 33
-             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0 @1"
+             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0 @1 @2"
              open append unit 33 form name enzydock.log
          else
              !system "../scripts/smiles_tors.py @0"
              close unit 33
-             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0"
+             system "../scripts/python_wrapper.sh ../scripts/smiles_tors.py @0 @1"
              open append unit 33 form name enzydock.log
          endif
       endif
@@ -42,7 +43,7 @@ if @in1 .eq. true then
 endif
 
 !***********************************************************
-!*                      End read_ligand.str
+!*                 End read_ligand.str
 !***********************************************************
 
 return

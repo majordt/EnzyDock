@@ -1,0 +1,131 @@
+************************************************************
+*                   Start toppar.str                       *
+************************************************************
+* Stream file for ALL topology and parameter reading
+* Needed when there is a unique componenet in the system
+* From Dunghyuk Suh
+* 
+
+! protein topology and parameter
+open read card unit 10 name @topDIR/all_local_top/toppar/top_all36_prot.rtf
+read  rtf card unit 10
+
+open read card unit 20 name @topDIR/all_local_top/toppar/par_all36m_prot.prm
+read para card unit 20 flex
+
+if @fulltoppar .eq. true then
+    ! nucleic acids
+    open read card unit 10 name @topDIR/all_local_top/toppar/top_all36_na.rtf
+    read  rtf card unit 10 append
+    
+    open read card unit 20 name @topDIR/all_local_top/toppar/par_all36_na.prm
+    read para card unit 20 append flex
+    
+    ! carbohydrates
+    open read card unit 10 name @topDIR/all_local_top/toppar/top_all36_carb.rtf
+    read  rtf card unit 10 append
+    
+    open read card unit 20 name @topDIR/all_local_top/toppar/par_all36_carb.prm
+    read para card unit 20 append flex
+    
+    ! lipids
+    open read card unit 10 name @topDIR/all_local_top/toppar/top_all36_lipid.rtf
+    read  rtf card unit 10 append
+    
+    open read card unit 20 name @topDIR/all_local_top/toppar/par_all36_lipid.prm
+    read para card unit 20 append flex
+endif
+
+! CGENFF
+if @fulltoppar .ne. true then
+    bomlev -1
+endif
+open read card unit 10 name @topDIR/all_local_top/toppar/top_all36_cgenff.rtf
+read  rtf card unit 10 append
+
+open read card unit 20 name @topDIR/all_local_top/toppar/par_all36_cgenff.prm
+read para card unit 20 append flex
+if @fulltoppar .ne. true then
+    bomlev @bomblevel
+endif
+
+if @fulltoppar .eq. true then
+    ! Phosphates and Sulfates
+    stream @topDIR/all_local_top/toppar/toppar_all36_moreions.str
+    
+    ! Interface FF
+    open read card unit 10 name @topDIR/all_local_top/toppar/top_interface.rtf
+    read  rtf card unit 10 append
+    
+    open read card unit 10 name @topDIR/all_local_top/toppar/par_interface.prm
+    read para card unit 10 append flex
+    
+    stream @topDIR/all_local_top/toppar/toppar_all36_nano_lig.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_nano_lig_patch.str
+    
+    ! Additional topologies and parameters for synthetic polymer
+    stream @topDIR/all_local_top/toppar/toppar_all36_synthetic_polymer.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_synthetic_polymer_patch.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_polymer_solvent.str
+endif
+
+! Additional topologies and parameters for water and ions
+! Read version with CCAT parameters
+!stream @topDIR/all_local_top/toppar/toppar_water_ions.str
+stream @topDIR/toppar_water_ions.str
+if @fulltoppar .eq. true then
+    stream @topDIR/all_local_top/toppar/toppar_dum_noble_gases.str
+    stream @topDIR/all_local_top/toppar/toppar_ions_won.str
+    stream @topDIR/all_local_top/toppar/cam.str
+
+    ! Additional topologies and parameters for protein
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_arg0.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_c36m_d_aminoacids.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_fluoro_alkanes.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_heme.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_na_combined.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_retinol.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_model.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_prot_modify_res.str
+    
+    ! Additional topologies and parameters for nucleic acids
+    stream @topDIR/all_local_top/toppar/toppar_all36_na_nad_ppi.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_na_rna_modified.str
+    
+    ! Additional topologies and parameters for lipids
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_sphingo.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_archaeal.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_bacterial.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_cardiolipin.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_cholesterol.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_dag.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_inositol.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_lnp.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_lps.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_mycobacterial.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_miscellaneous.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_model.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_prot.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_tag.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_yeast.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_hmmm.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_detergent.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_ether.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_lipid_oxidized.str
+    
+    ! Additional topologies and parameters for carbohydrates
+    stream @topDIR/all_local_top/toppar/toppar_all36_carb_glycolipid.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_carb_glycopeptide.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_carb_imlab.str
+    
+    ! Additional topologies and parameters for spin/fluorophore labels
+    stream @topDIR/all_local_top/toppar/toppar_all36_label_spin.str
+    stream @topDIR/all_local_top/toppar/toppar_all36_label_fluorophore.str
+endif
+
+!***********************************************************
+!*                    End toppar.str                       *
+!***********************************************************
+
+return
+

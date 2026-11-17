@@ -22,16 +22,31 @@ if @{ii} .le. @proteinunit goto str_loop_punit
 
 ! Write @proteinname_1 ... if from psf+crd
 if @charmmgui .eq. true then
-   ! Read protein topology file
-   open read unit 10 card name @ProtTopFile36
-   read rtf unit 10 card
-   close unit 10
-   
-   !Read protein parameter file
-   open read unit 10 card name @ProtParFile36
-   read para unit 10 card flex
-   close unit 10
+   !! Read protein topology file
+   !open read unit 10 card name @ProtTopFile36
+   !read rtf unit 10 card
+   !close unit 10
+   !
+   !!Read protein parameter file
+   !open read unit 10 card name @ProtParFile36
+   !read para unit 10 card flex
+   !close unit 10
 
+   !stream @topDIR/toppar_water_ions.str
+   !
+   !bomlev -1
+   !!read topology
+   !open read card unit 10 name @topDIR/top_all36_cgenff.rtf
+   !read rtf card unit 10 append
+   !close unit 10
+   !
+   !!read parameters
+   !open read card unit 10 name @topDIR/par_all36_cgenff.prm
+   !read param card unit 10 flex append
+   !close unit 10
+   
+   stream @strDIR/toppar.str  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    stream @strDIR/read_protein.str
 
    set pun 1

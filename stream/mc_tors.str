@@ -8,11 +8,21 @@
 
 !if mc_cov_flag .gt. 0 then goto skip_move
 
+! All weight and dmax below must be optimized
 if @covalent .eq. false then
-   ! Rigid body translations of ligand
-   move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label atrn sele segid ligand_@currligand end
-   ! Rigid body rotations of ligand
-   move add mvtp rrot byresidue weight 0.25 dmax 60.0 label arot sele segid ligand_@currligand end
+   if @{basin_hopping} .eq. true then
+      ! Rigid body translations of ligand
+      move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label atrn sele segid ligand_@currligand end -
+           mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0
+      ! Rigid body rotations of ligand
+      move add mvtp rrot byresidue weight 0.25 dmax 60.0 label arot sele segid ligand_@currligand end -
+           mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0
+   else
+      ! Rigid body translations of ligand
+      move add mvtp rtrn byresidue weight 0.25 dmax 1.00 label atrn sele segid ligand_@currligand end
+      ! Rigid body rotations of ligand
+      move add mvtp rrot byresidue weight 0.25 dmax 60.0 label arot sele segid ligand_@currligand end
+   endif
 endif
 !if @water .eq. true then
    ! Rigid body translations of water molecules
@@ -31,25 +41,36 @@ if tagwexp .eq. true then
    endif
 !if tagwexp .eq. true then
    if qwlig .eq. true then
-      ! Rigid body translations of explicit waters
-      move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label wtrn sele wlig end
-      ! Rigid body rotations of explicit waters
-      move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele wlig end
+      if @{basin_hopping} .eq. true then
+         ! Rigid body translations of explicit waters
+         move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label wtrn sele wlig end -
+              mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0
+         ! Rigid body rotations of explicit waters
+         move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele wlig end -
+              mini sd nsteps @{bh_nsteps} nprint @{bh_print} step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0
+      else
+         ! Rigid body translations of explicit waters
+         move add mvtp rtrn byresidue weight 1.00 dmax 1.00 label wtrn sele wlig end
+         ! Rigid body rotations of explicit waters
+         move add mvtp rrot byresidue weight 1.00 dmax 360.0 label wrot sele wlig end
+      endif
    endif
 endif
 
 ! Link moves so they are done together.
 ! Remove for CHARMM-GUI until all MC bugs cleared
-!if @covalent .eq. false then
-!   move link lab1 atrn lab2 arot
-!endif
+if smartmc .eq. true then
+   if @covalent .eq. false then
+      move link lab1 atrn lab2 arot
+   endif
 
 ! Remove for CHARMM-GUI until all MC bugs cleared
-!if tagwexp .eq. true then
-!   if qwlig .eq. true then
-!      move link lab1 wtrn lab2 wrot
-!   endif
-!endif
+   if tagwexp .eq. true then
+      if qwlig .eq. true then
+         move link lab1 wtrn lab2 wrot
+      endif
+   endif
+endif
 
 bomlev -1
 open unit 101 read form name @stmDIR/mc_add.str
@@ -100,10 +121,15 @@ set iuncrd -11
 set nsavc    0
 if @mcmin .eq. true then   ! write trajectory file
    set iuncrd 11
-   open write unformatt unit @iuncrd name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd
+   !set dcdidx g_@currligand_@iter_@microiter
+   !open write unformatt unit @iuncrd name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_@dcdidx.dcd
+   open write unformatt unit @iuncrd name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd
    if @mcsteps .gt. 100 then
       set nsavc  100
    else
+      set nsavc 1
+   endif
+   if @{basin_hopping} .eq. true then
       set nsavc 1
    endif
 endif
@@ -121,19 +147,30 @@ endif
 
 ! If simulated annealing MC skip the following parts
 if mcsa .eq. true then
-   if @mchtemp .gt. @mcltemp goto mcsa
+   if @maxmctemp .gt. @minmctemp goto mcsa
+endif
+
+if @microiter .le. 1 then
+   write title unit 33
+* single t mc_tors (in protein or to align to a docked state with mcs)
+* BH if BH requested
+*
 endif
 
 ! Do standard single temperature MC simulation
+! This is also performed for Basin Hopping instead of MCSA
+prnlev @sillev
 mc temperature @mctemp nsteps @mcsteps -
    iseed @seed1 @seed2 @seed3 @seed4 -
    idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
    iuncrd @iuncrd nsavc @nsavc
+prnlev 5
 
 ! If mcmin flag set, find lowest energy (or interaction energy) structure
 if @mcmin .eq. true then
 
-   open read unfo unit 11 name @scrDIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd ! read trajectory file
+   !open read unfo unit 11 name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_@dcdidx.dcd ! read trajectory file
+   open read unfo unit 11 name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd ! read trajectory file
 
    traj query unit 11
 
@@ -141,25 +178,42 @@ if @mcmin .eq. true then
    calc NTot = ?nfile   ! Number of structures in file (from query)
 
    set mcount 1             ! Counter
-   set mcener 9999.0   ! Initial lowest energy
+   set mcener 99999999.0   ! Initial lowest energy
+   set lowidx 1
 
+   prnlev @sillev
    label mcmin_loop
 
       traj read   ! Read structure
 
       ! Update non-bonded list
-      !update atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
-      !       vswitch switch @softon
+      update atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+             vswitch switch @softon
+
 
       gete  ! Get energy
-      if mcener .lt. ?ener goto mcnext
+      ! Avoid null coordinates if the initial guess is too low;
+      ! Especially important when part of the cofactor lies outside the grid boundaries.
+      if @mcount .eq. 1 then
          coor copy comp
          set mcener ?ener
+      endif
+      if mcener .le. ?ener goto mcnext
+         coor copy comp
+         set mcener ?ener
+         set lowidx @mcount
       label mcnext
       incr mcount
 
    if mcount .lt. @NTot goto mcmin_loop
+   prnlev 5
 
+   if @{basin_hopping} .eq. true then
+      write title unit 33
+* lowest e after BH torsinals mc was found after @lowidx steps out of @mcount
+*
+   endif
+   
    coor copy   ! Copy lowest structure back to main coordinate set
 
 endif
@@ -169,10 +223,16 @@ goto skip_mc
 ! Do MC simulated annealing
 label mcsa
 
-   calc mc_dtemp (@mchtemp - @mcltemp)/@mcycles
+   if @microiter .le. 1 then
+      write title unit 33
+* mcsa mc_tors (in protein or to align to a docked state with mcs)
+*
+   endif
+
+   calc mc_dtemp (@maxmctemp - @minmctemp)/@mccycles
 
    ! Heating
-   set mctemp0 @mcltemp
+   set mctemp0 @minmctemp
    label mc_heat
 
       mc temperature @mctemp0 nsteps @mcsteps -
@@ -182,10 +242,10 @@ label mcsa
 
       incr mctemp0 by @{mc_dtemp}
 
-   if mctemp0 .le. @mchtemp goto mc_heat
+   if mctemp0 .le. @maxmctemp goto mc_heat
 
    ! Cooling
-   set mctemp0 @mchtemp
+   set mctemp0 @maxmctemp
    label mc_cool
 
       mc temperature @mctemp0 nsteps @mcsteps -
@@ -195,7 +255,7 @@ label mcsa
 
       decr mctemp0 by @{mc_dtemp}
 
-   if mctemp0 .ge. @mcltemp goto mc_cool
+   if mctemp0 .ge. @minmctemp goto mc_cool
 
 ! End of simulated annealing
 
@@ -203,17 +263,19 @@ label skip_mc
 
 ! First unlink moves then delete
 ! Remove for CHARMM-GUI until all MC bugs cleared
-!if tagwexp .eq. true then
-!   if qwlig .eq. true then
-!      move link lab1 wtrn
-!   endif
-!endif
-!if @covalent .eq. false then
-!   move link lab1 atrn
-!endif
+if smartmc .eq. true then
+   if tagwexp .eq. true then
+      if qwlig .eq. true then
+         move link lab1 wtrn
+      endif
+   endif
+   if @covalent .eq. false then
+      move link lab1 atrn
+   endif
 !!if @water .eq. true then
 !!   move link lab1 wtrn
 !!endif
+endif
 !if @covalent .eq. false then
 !   move dele label atrn
 !   move dele label arot

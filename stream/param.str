@@ -31,14 +31,14 @@ set scrDIR       @DIR/scr                            ! Scratch disk for current 
 set scr1DIR      /var/spool/scratch/xxxx/enzydock/scr ! Multiple project scratch
 set scr2DIR      /var/spool/scratch/xxxx/enzydock/scr ! Multiple project scratch
 set docDIR       @DIR/dock                           ! The dock directory that holds all files
-set cgenff       /private/chem/silcsbio.2022.1/cgenff/cgenff ! cgenff
+set cgenff       /private/chem/silcsbio.2026.1-alpha/cgenff/cgenff
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! RTF and PRM files
-set ProtTopFile36   @topDIR/top_all36_prot.rtf                ! Protein topology, C36 FF (August 2012)
-set ProtParFile36   @topDIR/par_all36_prot.prm                ! Protein parameters, C36 FF (August 2012)
-set WatIonTopFile   @topDIR/top_all36_water_ions_dd.rtf       ! Water and ion topology
-set WatIonParFile   @topDIR/par_all36_water_ions_dd.prm       ! Water and ion parameters
+!set ProtTopFile36   @topDIR/top_all36_prot.rtf                ! Protein topology, C36 FF (August 2012)
+!set ProtParFile36   @topDIR/par_all36m_prot.prm               ! Protein parameters, C36 FF (August 2012)
+!set WatIonTopFile   @topDIR/top_all36_water_ions_dd.rtf       ! Water and ion topology
+!set WatIonParFile   @topDIR/par_all36_water_ions_dd.prm       ! Water and ion parameters
 !set Tip3File        @crdDIR/tip216.crd                        ! Equilibrated TIP3 file
 set gridrtf         @topDIR/grid_probes.rtf                   ! rtf for grid generation on receptor
 set gridprm         @topDIR/grid_probes.prm                   ! prm for grid generation on receptor

@@ -4,16 +4,20 @@
 * Reads in rtf and prm files
 *
 
-! Read protein topology file
-open read unit 10 card name @ProtTopFile36
-read rtf unit 10 card 
-close unit 10
+if @charmmgui .ne. true then
 
-!Read protein parameter file
-open read unit 10 card name @ProtParFile36
-read para unit 10 card flex
-close unit 10
+   !! Read protein topology file
+   !open read unit 10 card name @ProtTopFile36
+   !read rtf unit 10 card 
+   !close unit 10
+   !
+   !!Read protein parameter file
+   !open read unit 10 card name @ProtParFile36
+   !read para unit 10 card flex
+   !close unit 10
 
+   stream @strDIR/toppar.str
+endif
 bomlev  -2
 
 !Read grid topology and parameter files
@@ -31,18 +35,23 @@ endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-stream @topDIR/toppar_water_ions.str
-
-!read topology
-open read card unit 10 name @topDIR/top_all36_cgenff.rtf
-read rtf card unit 10 append
-close unit 10
-
-!read parameters
-open read card unit 10 name @topDIR/par_all36_cgenff.prm
-read param card unit 10 flex append
-close unit 10
-
+!if @charmmgui .ne. true then
+!   stream @topDIR/toppar_water_ions.str
+!   
+!   !read topology
+!   open read card unit 10 name @topDIR/top_all36_cgenff.rtf
+!   read rtf card unit 10 append
+!   close unit 10
+!   
+!   !read parameters
+!   open read card unit 10 name @topDIR/par_all36_cgenff.prm
+!   read param card unit 10 flex append
+!   close unit 10
+!
+!   if @fulltoppar .eq. true then
+!      stream @strDIR/toppar.str  
+!   endif
+!endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Read cofactor rtf
 ! cofact1
@@ -124,7 +133,7 @@ if covalent .eq. true then
 endif
 
 ! "_" is dummy variable
-define _ sele .not. init show end
+define _ sele .not. init @debugshow end
 
 bomlev @bomblevel
 

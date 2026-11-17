@@ -76,21 +76,18 @@ nbonds -
     cutnb @Ctnb  ctofnb @Ctfnb  ctonnb @Ctonb -
     inbf -1
 
-set qmdefined false
-if ?mndo97 .eq. 1 then
-   mndo97 remove am1 charge @qmcharge@@currligand nstep 500 group select QMS show end
-   set qmdefined true
+if @qmengine .eq. mndo97 then
+   mndo97 remove am1 charge @qmcharge@@currligand d3bj twobody nstep 500 group select QMS show end
 endif
-if ?squantm .eq. 1 then
+
+if @qmengine .eq. squantm then
    quantum remove am1 charge @qmcharge@@currligand group select QMS show end
-   set qmdefined true
 endif
 !if ?quantum .eq. 1 then
 !   quantum remove am1 charge @qmcharge@@currligand group select QMS show end
 !   set qmdefined true
 !endif
-if ?qchem .eq. 1 then
-   set qmdefined true
+if @qmengine .eq. qchem then
    ! Account for dielectric constant (note that for flexible docking this will also influence
    ! protein-protein interactions unless using special code that separates between MM-MM and 
    ! QM-MM interactions)
@@ -128,22 +125,19 @@ if ?qchem .eq. 1 then
 endif
 
 ! Only switch on default qm/mm if no other qm/mm active
-if @qmdefined .eq. false then
-   if ?quantum .eq. 1 then
+if @qmengine .eq. quantum then
       quantum remove am1 charge @qmcharge@@currligand group select QMS show end
-      set qmdefined true
-   endif
 endif
 
-if @qmdefined .eq. false then
-   echo EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+!if @qmdefined .eq. false then
+!   echo EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
    ! Update readable log file
 !   open append unit 33 form name enzydock.log
-   write title unit 33
-* EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
-*
+!   write title unit 33
+!* EnzyDock WARNING: No correct QM code found in compiled version of CHARMM.
+!*
 !   close unit 33
-endif
+!endif
 !grid on
 
 !**********************************************************

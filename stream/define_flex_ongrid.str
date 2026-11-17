@@ -15,8 +15,8 @@ label define_flex_loop
 
    if @numflex@@c .lt. 1 goto skip_define_flex_loop
 
-   define flex@c sele segi FLX@c show end
-   define flex sele flex .or. flex@c show end
+   define flex@c sele segi FLX@c @debugshow end
+   define flex sele flex .or. flex@c @debugshow end
 
    label skip_define_flex_loop
 
@@ -26,7 +26,7 @@ if c .le. @proteinunit goto define_flex_loop
 
 ! Backbone atoms are not flexible unless specifically defined as flexible
 define back sele segi FLX* .and. (type N .or. type C .or. type O .or. type CA -
-                 .or. type HN .or. type HA .or. type HA2) show end
+                 .or. type HN .or. type HA .or. type HA2) @debugshow end
 
 ! If backbone atoms are flexible
 if flexibleback .eq. true then
@@ -35,7 +35,7 @@ if flexibleback .eq. true then
 endif
 
 ! Define flexible region
-define flexx sele flex .and. .not. back show end
+define flexx sele flex .and. .not. back @debugshow end
 
 return
 

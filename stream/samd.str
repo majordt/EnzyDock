@@ -18,18 +18,9 @@ endif
 !    set teminc 10.0
 !    calc htfreq = int(@numheatsteps*@teminc/(@heattemp - @cooltemp))
 set htfreq 50
-calc teminc @htfreq*(@heattemp - @cooltemp)/@numheatsteps
-calc frq @numheatsteps/10
-calc frq2 10*@frq
+calc md_dtemp (@maxmdtemp - @minmdtemp)/@mdcycles
 
-if @silent .eq. true then
-!  RS: not silent, may interfere with the calculation
-!  set frq @ligmdsteps
-!  set frq2 @ligmdsteps
-  set sillev 1
-else
-  set sillev 5 ! regular prnlev
-endif
+!calc teminc @htfreq*(@heattemp - @cooltemp)/@numheatsteps
 
 ! Possible to use restart files, but causes instability
 !open write unit 21  card name @scrDIR/heating.rst
@@ -37,61 +28,91 @@ endif
 stream @strDIR/seed.str   ! Generate new seeds
 
 ! RS shake
-shake bond para tol 1.0e-9  sele hydrogen end -
-   sele ( .not. hydrogen ) end
+!shake bond para tol 1.0e-9  sele hydrogen end -
+!   sele ( .not. hydrogen ) end
 
-prnlev @sillev
-dynamics leap start timestep @timestep -
-    nstep @numheatsteps nprint @frq2 iprfrq @frq -
-    firstt @cooltemp finalt @heattemp teminc @teminc ihtfrq @htfreq ieqfrq @htfreq -
-    ichecw 1 twindl -10.0 twindh 10.0 -
-    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 - 
-    iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
-    inbfrq 0 ilbfrq 0  - ! Updates not needed
-    echeck 5000000.0
-prnlev 5
+! Heating
+set mdtemp0 @minmdtemp
+if @microiter .le. 1 then
+   write title unit 33
+* samd (in protein or to align to a docked state with mcs)
+*
+endif
 
-! RS shake
-shake off
+label md_heat
 
+   calc frq @numheatsteps/10
+   calc frq2 10*@frq
+   prnlev @sillev
+   dynamics leap start timestep @timestep -
+      nstep @numheatsteps nprint @frq2 iprfrq @frq -
+      firstt @mdtemp0 finalt @mdtemp0 teminc 0.0 ihtfrq @htfreq ieqfrq @htfreq -
+      ichecw 1 twindl -10.0 twindh 10.0 -
+      iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+      iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+      inbfrq 0 ilbfrq 0  - ! Updates not needed
+      echeck 5000000.0
+!dynamics leap start timestep @timestep -
+!    nstep @numheatsteps nprint @frq2 iprfrq @frq -
+!    firstt @cooltemp finalt @heattemp teminc 0.0 ihtfrq @htfreq ieqfrq @htfreq -
+!    ichecw 1 twindl -10.0 twindh 10.0 -
+!    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 - 
+!    iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+!    inbfrq 0 ilbfrq 0  - ! Updates not needed
+!    echeck 5000000.0
+   prnlev 5
+
+!   ! RS shake
+!   shake off
+
+    incr mdtemp0 by @{md_dtemp}
+   
+if mdtemp0 .le. @maxmdtemp goto md_heat
+   
+! Cooling
+set mdtemp0 @maxmdtemp
+label md_cool
+   
 ! Cool down
 ! set teminc -10.0
 ! calc clfreq = int(@numcoolsteps*@teminc/(@cooltemp - @heattemp))
-set clfreq 50
-calc teminc @clfreq*(@cooltemp - @heattemp)/@numcoolsteps
-calc frq @numcoolsteps/10
-calc frq2 10*@frq
-
-if @silent .eq. true then
-!  RS: not silent, may interfere with the calculation
-!  set frq @ligmdsteps
-!  set frq2 @ligmdsteps
-  set sillev 1
-else
-  set sillev 5 ! regular prnlev
-endif
+   set clfreq 50
+!calc teminc @clfreq*(@cooltemp - @heattemp)/@numcoolsteps
+   calc frq @numcoolsteps/10
+   calc frq2 10*@frq
 
 !open read  unit 22  card name @scrDIR/heating.rst
 
-stream @strDIR/seed.str   ! Generate new seeds
+   stream @strDIR/seed.str   ! Generate new seeds
 
 ! RS shake
-shake bond para tol 1.0e-9  sele hydrogen end -
-   sele ( .not. hydrogen ) end
+!shake bond para tol 1.0e-9  sele hydrogen end -
+!   sele ( .not. hydrogen ) end
 
-prnlev @sillev
-dynamics leap start timestep @timestep -
-    nstep @numcoolsteps nprint @frq2 iprfrq @frq -
-    firstt @heattemp finalt @cooltemp teminc @teminc ihtfrq @clfreq ieqfrq @clfreq -
-    ichecw 1 twindl -10.0 twindh 10.0 -
-    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
-    iunwri -1 iuncrd -1 iunrea -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
-    inbfrq 0 ilbfrq 0  - ! Updates not needed
-    echeck 5000000.0
-prnlev 5
+   prnlev @sillev
+   dynamics leap start timestep @timestep -
+      nstep @numcoolsteps nprint @frq2 iprfrq @frq -
+      firstt @mdtemp0 finalt @mdtemp0 teminc 0.0 ihtfrq @htfreq ieqfrq @htfreq -
+      ichecw 1 twindl -10.0 twindh 10.0 -
+      iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+      iunwri -1 iuncrd -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+      inbfrq 0 ilbfrq 0  - ! Updates not needed
+      echeck 5000000.0
+!dynamics leap start timestep @timestep -
+!    nstep @numcoolsteps nprint @frq2 iprfrq @frq -
+!    firstt @heattemp finalt @cooltemp teminc 0.0 ihtfrq @clfreq ieqfrq @clfreq -
+!    ichecw 1 twindl -10.0 twindh 10.0 -
+!    iasors 1 iasvel 1 iseed @seed1 @seed2 @seed3 @seed4 -
+!    iunwri -1 iuncrd -1 iunrea -1 isvfrq 0 nsavc 0 nsavv 0 iunvel 0 -
+!    inbfrq 0 ilbfrq 0  - ! Updates not needed
+!    echeck 5000000.0
+   prnlev 5
 
 ! RS shake
-shake off
+!shake off
+   decr mdtemp0 by @{md_dtemp}
+   
+if mdtemp0 .ge. @minmdtemp goto md_cool
 
 skipe none
 shake off
