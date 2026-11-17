@@ -45,6 +45,15 @@ if @ligmcflag .ne. true goto ligand_minimize
 set cflag false
 if @covalent .eq. true set cflag true
 set covalent false
+! backup variables
+if @{basin_hopping} .eq. true then
+   set bh_nsteps_temp @{bh_nsteps}
+   set bh_nsteps @{lig_bh_nsteps}
+   set bh_print_temp @{bh_print}
+   set bh_print @{lig_bh_print}
+endif
+set temptordmax @tordmax
+set tordmax @ligtordmax
 ! Prepare for torsional MC
 stream @strDIR/mc/mc_add.str
 ! If no torsions found, just minimize
@@ -84,6 +93,11 @@ label after_ligand_minimize
 stream @strDIR/mc/mc_delete.str
 
 if @cflag .eq. true set covalent true
+if @{basin_hopping} .eq. true then
+   set bh_nsteps @{bh_nsteps_temp}
+   set bh_print @{bh_print_temp}
+endif
+set tordmax @temptordmax
 
 return
 

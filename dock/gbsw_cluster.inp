@@ -25,10 +25,16 @@ label gbsw_loop
    stream @strDIR/patch_offgrid.str
 
    ! Read cofactors
+   set orgnumcofactor @numcofactor
+   if @currligand .eq. @nowatlig then
+        !calc numcofactor = @orgnumcofactor - 1
+        decr numcofactor by 1
+   endif
    if @numcofactor .gt. 0 then 
       stream @strDIR/generate_cofactors.str
       if patch_cofact .eq. true stream @strDIR/cofact_patch_offgrid.str ! Read cofactor patching
    endif
+   set numcofactor @orgnumcofactor
 
    set missingradius false
 

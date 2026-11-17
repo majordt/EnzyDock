@@ -48,6 +48,10 @@ label after_define_center
 
 if patch_cofact .eq. true set flexibledocking false   ! Switch flexible MM refinement off
 
+set currligand 1
+stream @strDIR/check_natoms.str
+set currligand @initlig
+
 if @cluster .eq. true then
 
    ! QM/MM for lowest energy ligands

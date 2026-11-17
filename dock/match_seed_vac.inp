@@ -129,7 +129,7 @@ set orgcovalent @covalent
 set covalent false
 set orgflexibledocking @flexibledocking
 set flexibledocking false
-
+set microiter 0
 stream @strDIR/mc_trot.str
 
 if mcflag .eq. true stream @strDIR/mc_tors.str        ! MC simulation of ligand torsional angles

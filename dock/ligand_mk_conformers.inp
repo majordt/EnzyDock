@@ -29,6 +29,59 @@ if @maxit .le. 0 goto vac_ligand_minimize
 !                  END SETUP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! RdKit option: ETKDGv3 + TFD clustering
+
+if etkdg .eq. true then
+    
+    ! write example crd file for etkdg to know the desired format
+    open write unit 1 form name @crdDIR/ligand_@currligand.crd
+    write coor card unit 1
+    close unit 1
+    
+    open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
+    write psf card unit 1
+    close unit 1
+    
+    set 0 @runid
+    set 1 @currligand
+    set 2 @maxconf
+    set 3 @vacclusterwidth
+
+    
+    close unit 33
+    system "../scripts/python_wrapper.sh ../scripts/etkdgv3_tfd_confs.py @0 @1 @2 @3"
+    open append unit 33 form name enzydock.log
+    
+    nbonds cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswitch switch eps @ligeps @ligdielec
+    
+    ! minimize each structure
+    stream niters@currligand.str
+    
+    set etkdgiter 1 
+    label etkdg_min
+
+        open unit 1 form read name @resDIR/@currligand_@runid_@etkdgiter_0_pre.crd
+        read coor card unit 1 !offset @NumObject
+        define ligand sele segid ligand_@currligand @debugshow end
+
+        mini abnr nstep 100
+    
+        open write unit 1 card name @resDIR/@currligand_@runid_@etkdgiter_0.crd
+        write coor unit 1 card
+        close unit 1
+        
+        open unit 1 form write name @resDIR/@currligand_@runid_@etkdgiter_0.pdb
+        write coor pdb unit 1
+        close unit 1
+    
+    incr etkdgiter
+    if @etkdgiter .le. @maxit goto etkdg_min
+    goto after_etkdg
+endif
+! End of RdKit option: ETKDGv3 + TFD clustering
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 set iuncrd -11
 set nsavc    0
 
@@ -42,18 +95,9 @@ nbonds cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswi swit eps @ligeps @l
 calc frq @ligmdsteps/10
 calc frq2 10*@frq
 
-if @silent .eq. true then
-!  RS: not silent, may interfere with the calculation
-!  set frq @ligmdsteps
-!  set frq2 @ligmdsteps
-  set sillev 1
-else
-  set sillev 5 ! regular prnlev
-endif
-
 set htfreq 50
-calc md_dtemp (@maxligmdtemp - @minligmdtemp)/@ligmdycles
-calc mc_dtemp (@maxligmctemp - @minligmctemp)/@ligmcycles
+calc md_dtemp (@maxligmdtemp - @minligmdtemp)/@ligmdcycles
+calc mc_dtemp (@maxligmctemp - @minligmctemp)/@ligmccycles
 
 ! Switch off covalent flag at this stage (reset later below)
 set cflag false
@@ -61,12 +105,25 @@ if @covalent .eq. true set cflag true
 set covalent false
 
 ! RS: debug
-print cons
+if @debug .eq. true then
+   print cons
+endif
 ! minimize, save structure as starting point
 ! RS: comp array is written when dyna exits (see charmm docs).
 ! Consider using scalar arrays 1-3 for xyz or second comp array
+
+! RS 09/09/2025 - make shake ONLY on samd part
+! RS shake
+!if @samd .eq. true then
+!   shake bond para tol 1.0e-9  sele hydrogen end -
+!   sele ( .not. hydrogen ) end
+!endif
+
 mini abnr nstep 100
-define ligand sele segid ligand_@currligand show end
+energy
+coor copy comp second
+
+define ligand sele segid ligand_@currligand @debugshow end
 open write unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
 write coor unit 1 card
 * CHARMM Energy = ?ener kcal/mol
@@ -83,24 +140,62 @@ open unit 1 form write name @psfDIR/@currligand_@runid_0.psf
 write psf card unit 1
 close unit 1
 
-
 set conf 1
+if @{basin_hopping} .eq. true then
+   set bh_nsteps_temp @{bh_nsteps}
+   set bh_nsteps @{lig_bh_nsteps}
+   set bh_print_temp @{bh_print}
+   set bh_print @{lig_bh_print}
+endif
+set temptordmax @tordmax
+set tordmax @ligtordmax
 stream @strDIR/mc/mc_add.str
 
 ! RS shake
-shake bond para tol 1.0e-9  sele hydrogen end -
-sele ( .not. hydrogen ) end
+! DTM 08-2024 move shake above first energy calculation to conserve energy
+!shake bond para tol 1.0e-9  sele hydrogen end -
+!sele ( .not. hydrogen ) end
+
+! DTM 08-2024 moved here
+set vacsamd false
+if @samd .eq. true set vacsamd true
+if @ntors .eq. 0 set vacsamd true
 
 label get_conformer
    
+   if @conf .eq. 1 then
+      write title unit 33
+* Sampling method(s) in vaccum
+*
+   endif
+   ! DTM 08-2024 replace file read with copy
    ! read minimized starting point
-   open read unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
-   read coor unit 1 card
-   close unit 1
-   define ligand sele segid ligand_@currligand show end
-   
+  ! open read unit 1 card name @crdDIR/@currligand_@runid_min_0_0.crd
+  ! read coor unit 1 card
+  ! close unit 1
+  ! define ligand sele segid ligand_@currligand @debugshow end
+   coor copy second 
+   energy
+
    stream @strDIR/seed.str
    
+   ! DTM 08-2024 moved outside loop
+   !set vacsamd false
+   !if @samd .eq. true set vacsamd true
+   !if @ntors .eq. 0 set vacsamd true
+      
+   if @vacsamd .eq. true then
+      ! RS shake
+      !if @samd .eq. true then
+      shake bond para tol 1.0e-9  sele hydrogen end -
+      sele ( .not. hydrogen ) end
+      !endif
+
+   if @conf .eq. 1 then
+      write title unit 33
+* samd in vacuum
+*
+   endif
       ! Heating
       set mdtemp0 @minligmdtemp
       label vac_md_heat
@@ -153,13 +248,23 @@ label get_conformer
    
       if mdtemp0 .ge. @minligmdtemp goto vac_md_cool
 
-   ! End of MD simulated annealing
-   
+      ! RS 09/09/2025 - make shake ONLY on samd part
+      !if @samd .eq. true then
+      ! RS shake
+      shake off
+      !endif
+
+      ! DTM 08-2024 mini moved here
+      mini abnr nstep 100
+      ! End of MD simulated annealing
+   endif 
+   ! If no torsinal angles skip to minimization
    if @ntors .eq. 0 goto write_mdmc_min
    ! RS: needed?
    !if @ligmcflag .ne. true goto write_mdmc_min
-
-   mini abnr nstep 100
+   !stop
+   ! DTM 08-2024, move mini inside samd loop (we start with minimized structure before samd)
+   !mini abnr nstep 100
    ! skip MC SA if no torsions were found   
 
    !set maxligmctemp  600.0  ! High MC docking (in annealing)
@@ -167,6 +272,12 @@ label get_conformer
    !set ligmcycles      5  ! Number of annealing heating and cooling steps
    
    ! Do MC simulated annealing
+   if @{mcsa} .eq. true then
+      if @conf .eq. 1 then
+          write title unit 33
+* mcsa in vacuum
+*
+      endif
 ! RS: label not in use in original script
 !   label mcsa
    
@@ -197,14 +308,78 @@ label get_conformer
          decr mctemp0 by @{mc_dtemp}
    
       if mctemp0 .ge. @minligmctemp goto vac_mc_cool
+
+      ! DTM 08-2024 mini added here
+      mini abnr nstep 100
    
    ! End of MC simulated annealing
+   endif
+   ! Basin Hopping
+   if @{basin_hopping} .eq. true then
+
+      if @conf .eq. 1 then
+          write title unit 33
+* basin hopping in vacuum
+*
+      endif
+
+      set iuncrd 11
+      !set dcdidx vac_@currligand_@conf
+      !open write unformatt unit @iuncrd name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_@dcdidx.dcd
+      open write unformatt unit @iuncrd name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd
+      set nsavc 1
+
+      prnlev @sillev
+      mc temperature @ligmctemp nsteps @ligmcsteps -
+         iseed @seed1 @seed2 @seed3 @seed4 -
+         idomcfrq @idomcfrq inbfrq 0 imgfrq 0 iecheck 0 -
+         iuncrd @iuncrd nsavc @nsavc
+      prnlev 5
+
+      !open read unfo unit 11 name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback_@dcdidx.dcd ! read trajectory file
+      open read unfo unit 11 name @scr2DIR/@runid_@gridsize_@deltagrid_@flexibledocking_@flexibleback.dcd ! read trajectory file
+      traj query unit 11
+      traj firstu 11 nunit 1 skip 1
+      calc NTot = ?nfile   ! Number of structures in file (from query)
+      set mcount 1             ! Counter
+      set mcener 999999999.0   ! Initial lowest energy
+      
+      prnlev @sillev
+      label lig_mcmin_loop
+      
+         traj read   ! Read structure
+      
+         ! Update non-bonded list
+         update cutnb @ligctnb ctofnb @ligctfnb ctonnb @ligctonb vswi swit eps @ligeps @ligdielec
+         !update atom eps @eps @dielec cutnb @ctnb ctofnb @ctfnb ctonnb @ctonb -
+         !       vswitch switch @softon
+      
+         gete  ! Get energy
+         ! Avoid null coordinates if the initial guess is too low;
+         ! Especially important when part of the cofactor lies outside the grid boundaries.
+         if @mcount .eq. 1 then
+            coor copy comp
+            set mcener ?ener
+         endif
+         if mcener .lt. ?ener goto lig_mcnext
+            coor copy comp
+            set mcener ?ener
+         label lig_mcnext
+         incr mcount
+      
+      if mcount .lt. @NTot goto lig_mcmin_loop
+      prnlev 5
+      
+      coor copy   ! Copy lowest structure back to main coordinate set
+      
+      ! ED 03/09/2025
+      mini abnr nstep 100
+   endif
    
    label write_mdmc_min
 
 !   stream @strDIR/mc/mc_delete.str
-   mini abnr nstep @mstep nprint @mprint
-
+   !mini abnr nstep @mstep nprint @mprint step 0.2 tole 0.0 tolg 0.0 tols 0.0 inbf 0
 
    ! RS: output names and locations should match enzydock conventions only after clustering  
    ! the name here should match consecutive python script for clustering
@@ -214,6 +389,8 @@ label get_conformer
    !*
    !close unit 1
    
+   energy
+
    open unit 1 form write name @pdbDIR/@currligand_@runid_mdmc_min_@conf_0.pdb
    write coor pdb unit 1
    * CHARMM Energy = ?ener kcal/mol
@@ -230,8 +407,11 @@ label get_conformer
 if @conf .le. @maxconf goto get_conformer
 !if @cflag .eq. true set covalent true
 
-! RS shake
-shake off
+! RS 09/09/2025 - make shake ONLY on samd part
+!if @samd .eq. true then
+!   ! RS shake
+!   shake off
+!endif
 
 !stream @strDIR/mc/mc_delete.str
 
@@ -271,6 +451,14 @@ stream @strDIR/mc/mc_delete.str
 
 if @cflag .eq. true set covalent true
 
+if @{basin_hopping} .eq. true then
+   set bh_nsteps @{bh_nsteps_temp}
+   set bh_print @{bh_print_temp}
+endif
+set tordmax @temptordmax
+
+label after_etkdg
+
 return
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -295,3 +483,24 @@ label vac_ligand_minimize
 
 goto after_vac_ligand_minimize
 
+! python for scope
+!vars = ["ctfnb", "ctnb", "ctonb",
+!        "dielec", "eps", "maxconf", "vacclusterwidth"
+!        "maxmctemp", "minmctemp", "mcsteps", "mcycles",
+!        "mdhtemp", "mdltemp", "mdsteps", "mdycles"]
+!
+!d = {"ctfnb":"998.0", "ctnb":"999.0", "ctonb":"996.0",
+!     "dielec":"cdie", "eps":"1.0", "maxconf":"100",
+!     "vacclusterwidth":"1.0",
+!     "maxmctemp":"600.0", "minmctemp":"100.0",
+!     "mcsteps":"10000", "mcycles":"5",
+!     "mdhtemp":"800.0", "mdltemp":"300.0",
+!     "mdsteps":"10000", "mdycles":"5"}
+!
+!for v in vars:
+!    print("if @?"+v+" .ne. 0 then\nset org"+v+" @"+v+"\nendif")
+!    print("set "+v+" "+d[v])
+!print()
+!for v in vars:
+!    print("if @?org"+v+" .ne. 0 then\nset "+v+" @org"+v+"\nendif")
+!
